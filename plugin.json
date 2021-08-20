@@ -1,0 +1,41 @@
+{
+  "slug": "LyraeModules",
+  "name": "LyraeModules",
+  "version": "1.0.0",
+  "license": "MIT",
+  "brand": "LyraeModules",
+  "author": "Vega Deftwing",
+  "authorEmail": "",
+  "authorUrl": "opguides.info",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "Sulafat",
+      "name": "Sulafat",
+      "description": "Distortion at 15 Solar Radii",
+      "tags": [
+        "Distortion"
+      ]
+    },
+    {
+      "slug": "Gamma",
+      "name": "Gamma",
+      "description": "",
+      "tags": [
+        "Utility"
+      ]
+    },
+    {
+      "slug": "Vega",
+      "name": "Vega",
+      "description": "ADSR with per stage outputs and ringmod",
+      "tags": [
+        "Envelope Generator"
+      ]
+    }
+  ]
+}
