@@ -191,11 +191,11 @@ struct SulafatWidget : ModuleWidget {
 
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(5.08, 69.693)), module, Sulafat::KNOB_PARAM));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 12.4)), module, Sulafat::LEFT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 22.26)), module, Sulafat::RIGHT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 12.4)), module, Sulafat::LEFT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 22.26)), module, Sulafat::RIGHT_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(5.08, 104.406)), module, Sulafat::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(5.08, 114.266)), module, Sulafat::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(5.08, 104.406)), module, Sulafat::LEFT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(5.08, 114.266)), module, Sulafat::RIGHT_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(5.08, 51.223)), module, Sulafat::LED1_LIGHT));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(5.08, 54.703)), module, Sulafat::LED2_LIGHT));

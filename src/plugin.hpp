@@ -38,3 +38,45 @@ struct SmallHexKnob : app::SvgKnob {
         setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallHexKnob.svg")));
     }
 };
+
+struct InJack : app::SvgPort {
+    widget::TransformWidget* tw;
+
+    InJack() {
+        fb->removeChild(sw);
+		tw = new TransformWidget();
+		tw->addChild(sw);
+		fb->addChild(tw);
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Jack.svg")));
+        tw->box.size = sw->box.size;
+		box.size = tw->box.size;
+		float angle = random::uniform() * M_PI;
+		tw->identity();
+		// Rotate SVG
+		math::Vec center = sw->box.getCenter();
+		tw->translate(center);
+		tw->rotate(angle);
+		tw->translate(center.neg());
+    }
+};
+
+struct OutJack : app::SvgPort {
+    widget::TransformWidget* tw;
+
+    OutJack() {
+        fb->removeChild(sw);
+		tw = new TransformWidget();
+		tw->addChild(sw);
+		fb->addChild(tw);
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Jack.svg")));
+        tw->box.size = sw->box.size;
+		box.size = tw->box.size;
+		float angle = random::uniform() * M_PI;
+		tw->identity();
+		// Rotate SVG
+		math::Vec center = sw->box.getCenter();
+		tw->translate(center);
+		tw->rotate(angle);
+		tw->translate(center.neg());
+    }
+};
