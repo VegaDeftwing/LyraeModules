@@ -68,12 +68,12 @@ struct GammaWidget : ModuleWidget {
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(5.08, 69.693)), module, Gamma::KNOB_PARAM));
 		addParam(createParamCentered<NKK>(mm2px(Vec(5.191, 116.946)), module, Gamma::INVERTSWITCH_PARAM));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 56.943)), module, Gamma::OFFSET_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 96.016)), module, Gamma::LEFT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 105.876)), module, Gamma::RIGHT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 56.943)), module, Gamma::OFFSET_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 96.016)), module, Gamma::LEFT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 105.876)), module, Gamma::RIGHT_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(5.08, 12.4)), module, Gamma::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(5.08, 22.26)), module, Gamma::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(5.08, 12.4)), module, Gamma::LEFT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(5.08, 22.26)), module, Gamma::RIGHT_OUTPUT));
 	}
 };
 
