@@ -1,7 +1,7 @@
 # Lyrae Modules
 
 ## Sulafat
-![](./images/Sulafat.png)
+<img src="./images/Sulafat.png" alt="alt text" width="30">
 
 Sulafat is a multi-mode wavefolder (and a bit more) with some internal modulation that diffeers between the two channels, with internal normalling of the left (top) input to the right (bottom) input
 
@@ -19,7 +19,7 @@ There's also an easter egg LFO mode, if the top (left) input is left disconected
 The left (top) output will be a basic LFO, while the bottow (right) output will be the two LFO's ringmodd'd together.
 
 ## γ Lyrae
-![](./images/Gamma.png)
+<img src="./images/Gamma.png" alt="alt text" width="30">
 
 Gamma Lyrae is a companion module to Sulafat. With nothing connected, the middle knob will generate two DC voltage, with one being the inverse of the other. The knob can be turned both ways to swap which side is going negative. If a CV input is provided, the knob becomes an attenuverter, but the operation is still effectively the same.
 
