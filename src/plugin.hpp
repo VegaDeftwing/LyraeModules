@@ -1,7 +1,5 @@
 #pragma once
-//#include <rack.hpp>
-// This is done to make auto complete work in VSCode
-#include </home/vega/git/ext/Rack/include/rack.hpp>
+#include <rack.hpp>
 
 
 using namespace rack;
