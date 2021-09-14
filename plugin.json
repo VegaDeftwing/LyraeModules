@@ -2,16 +2,13 @@
   "slug": "LyraeModules",
   "name": "LyraeModules",
   "version": "1.0.0",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "brand": "LyraeModules",
   "author": "Vega Deftwing",
-  "authorEmail": "",
   "authorUrl": "opguides.info",
-  "pluginUrl": "",
-  "manualUrl": "",
-  "sourceUrl": "",
-  "donateUrl": "",
-  "changelogUrl": "",
+  "manualUrl": "https://github.com/VegaDeftwing/LyraeModules/blob/main/README.md",
+  "sourceUrl": "https://github.com/VegaDeftwing/LyraeModules",
+  "donateUrl": "https://github.com/sponsors/VegaDeftwing",
   "modules": [
     {
       "slug": "Sulafat",
@@ -27,14 +24,6 @@
       "description": "",
       "tags": [
         "Utility"
-      ]
-    },
-    {
-      "slug": "Vega",
-      "name": "Vega",
-      "description": "ADSR with per stage outputs and ringmod",
-      "tags": [
-        "Envelope Generator"
       ]
     }
   ]
