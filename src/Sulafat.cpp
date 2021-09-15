@@ -1,5 +1,6 @@
 #include "plugin.hpp"
 
+using simd::float_4;
 struct Sulafat : Module {
 	enum ParamIds {
 		KNOB_PARAM,
@@ -36,13 +37,9 @@ struct Sulafat : Module {
 	float phase2 = 0.f;
 	float pitch = 0.f;
 
-	float clamp(float n, float lower, float upper) {
-  		return std::max(lower, std::min(n, upper));
-	}
-
 	void process(const ProcessArgs& args) override {
 		// Generate Interal LFOs
-		phase1 += dsp::FREQ_C4 / 300 * args.sampleTime * std::pow(2.f, pitch);
+		phase1 += dsp::FREQ_C4 / 300 * args.sampleTime * simd::pow(2.f, pitch);
 		phase2 += dsp::FREQ_C4 / 220 * args.sampleTime;
 		if (phase1 >= .5f){
 			phase1 = -.5f;
@@ -50,8 +47,8 @@ struct Sulafat : Module {
 		if (phase2 >= .5f){
 			phase2 = -.5f;
 		}
-		float sine1 = std::sin(2.f * M_PI * phase1);
-		float sine2 = std::sin(2.f * M_PI * phase2);
+		float sine1 = simd::sin(2.f * M_PI * phase1);
+		float sine2 = simd::sin(2.f * M_PI * phase2);
 
 		// All The Modes
 		switch (mode)
@@ -65,11 +62,11 @@ struct Sulafat : Module {
 			}
 			break;
 		case 1: //Wavefolder with DC offset modulation
-			outputs[LEFT_OUTPUT].setVoltage(fmod(inputs[LEFT_INPUT].getVoltage()+(sine2*.15),3) * 1.66);
+			outputs[LEFT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine2*.15),3) * 1.66);
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[RIGHT_OUTPUT].setVoltage(fmod(inputs[RIGHT_INPUT].getVoltage()+(sine1*.15),3) * 1.66);
+				outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[RIGHT_INPUT].getVoltage()+(sine1*.15),3) * 1.66);
 			} else{
-				outputs[RIGHT_OUTPUT].setVoltage(fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.15),3.3) * 1.51);
+				outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.15),3.3) * 1.51);
 			}
 			break;
 		case 2: //Direct modulo, with modulation. This Basically does a S&H effect on top of the wave folder
@@ -80,12 +77,12 @@ struct Sulafat : Module {
 				outputs[RIGHT_OUTPUT].setVoltage(((int)(inputs[LEFT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25)) % 3) * 2.5);
 			}
 			break;
-		case 3: //Tangent + Clamping = Wavefolding? Again?
-			outputs[LEFT_OUTPUT].setVoltage(clamp((std::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1*.15) )),-5.f,5.f));
+		case 3: //Tangent + clamping = Wavefolding? Again?
+			outputs[LEFT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1*.15) )),-5.f,5.f));
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[RIGHT_OUTPUT].setVoltage(clamp((std::tan(.25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
+				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
 			} else{
-				outputs[RIGHT_OUTPUT].setVoltage(clamp((std::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
+				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
 			}
 			break;
 		case 4: // Combine modes 1 & 2 on each half of the wave, filter mode 2 a bit to keep it from dominating the output
@@ -98,7 +95,7 @@ struct Sulafat : Module {
 				filterMe = lowpassFilter.lowpass();
 				outputs[LEFT_OUTPUT].setVoltage(filterMe);
 			} else{
-				outputs[LEFT_OUTPUT].setVoltage(fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.25)+(sine2*.35),3) * 1.66);
+				outputs[LEFT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.25)+(sine2*.35),3) * 1.66);
 			}
 
 			if (inputs[RIGHT_INPUT].isConnected()){
@@ -108,7 +105,7 @@ struct Sulafat : Module {
 					filterMe = lowpassFilter.lowpass();
 					outputs[RIGHT_OUTPUT].setVoltage(filterMe);
 				} else{
-					outputs[RIGHT_OUTPUT].setVoltage(fmod(inputs[RIGHT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25),3) * 1.66);
+					outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[RIGHT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25),3) * 1.66);
 				}
 			} else{
 				if (inputs[LEFT_INPUT].getVoltage() < 0){
@@ -117,15 +114,15 @@ struct Sulafat : Module {
 					filterMe = lowpassFilter.lowpass();
 					outputs[RIGHT_OUTPUT].setVoltage(filterMe);
 				} else{
-					outputs[RIGHT_OUTPUT].setVoltage(fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25),3) * 1.66);
+					outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25),3) * 1.66);
 				}
 			}
 			break;
 			
 		case 5: // Simple Ring-Mod + modulation, if no right input, use LFOs
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[LEFT_OUTPUT].setVoltage(clamp(inputs[LEFT_INPUT].getVoltage() * (inputs[RIGHT_INPUT].getVoltage() -5.f + (sine1*.35)-(sine2*.25)),-5.f,5.f));
-				outputs[RIGHT_OUTPUT].setVoltage(clamp(inputs[RIGHT_INPUT].getVoltage() * (inputs[LEFT_INPUT].getVoltage() -5.f + (sine1*.25)-(sine2*.35)) ,-5.f,5.f));
+				outputs[LEFT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage() * (inputs[RIGHT_INPUT].getVoltage() -5.f + (sine1*.35)-(sine2*.25)),-5.f,5.f));
+				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[RIGHT_INPUT].getVoltage() * (inputs[LEFT_INPUT].getVoltage() -5.f + (sine1*.25)-(sine2*.35)) ,-5.f,5.f));
 			} else {
 				outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage() * (sine2*.35)+(sine1*.75));
 				outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage() * (-sine1*.75)+(sine2*.35) );
