@@ -25,6 +25,14 @@
       "tags": [
         "Utility"
       ]
+    },
+    {
+      "slug": "Vega",
+      "name": "Vega",
+      "description": "ADSR with per stage outputs and ringmod",
+      "tags": [
+        "Envelope Generator"
+      ]
     }
   ]
 }

@@ -61,13 +61,13 @@ struct Vega : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(A_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(A_PARAM, 0.01, 0.f, 0.f, "");
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(ACURVE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(DRINGATT_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(D_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(D_PARAM, 0.001, 0.f, 0.f, "");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
@@ -77,14 +77,139 @@ struct Vega : Module {
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(R_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(R_PARAM, 0.001, 0.f, 0.f, "");
 		configParam(RRINGATT_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "");
 		configParam(ANGER_PARAM, 0.f, 1.f, 0.f, "");
 	}
 
+	int stage = 0;
+	bool isRunning = false;
+	float env = 0.f;
+	float output = 0.f;
+	dsp::SchmittTrigger gateDetect;
+
 	void process(const ProcessArgs& args) override {
+		// First, we need to get the gate
+		bool gate = inputs[GATE_INPUT].value > 1.0;
+		if (gateDetect.process(gate)) {
+			isRunning = true;
+			stage = 0; //Attack
+		}
+
+		if (isRunning) {
+			if (gate){
+				switch (stage){
+				case 0: // Attack
+					env += params[A_PARAM].getValue();
+					if (env > 1.0){
+						stage = 1;
+					}
+					if (inputs[AMOD_INPUT].isConnected()){
+						output = (inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue()) * env + env;
+					} else{
+						output = env;
+					}
+					outputs[AGATE_OUTPUT].setVoltage(10.f);
+					outputs[DGATE_OUTPUT].setVoltage(0.f);
+					outputs[SGATE_OUTPUT].setVoltage(0.f);
+					outputs[RGATE_OUTPUT].setVoltage(0.f);
+					if (outputs[AOUT_OUTPUT].isConnected()){
+						outputs[AOUT_OUTPUT].setVoltage(10.f * env);
+					}
+					break;
+				case 1: // Decay
+					env -= params[D_PARAM].getValue();
+					if (env <= params[S_PARAM].getValue() + 0.001){
+						stage = 2;
+					}
+					if (inputs[DMOD_INPUT].isConnected()){
+						output = (inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue()) * env + env;
+					} else{
+						output = env;
+					}
+					outputs[AGATE_OUTPUT].setVoltage(0.f);
+					outputs[DGATE_OUTPUT].setVoltage(10.f);
+					outputs[SGATE_OUTPUT].setVoltage(0.f);
+					outputs[RGATE_OUTPUT].setVoltage(0.f);
+					if (outputs[AOUT_OUTPUT].isConnected()){
+						outputs[AOUT_OUTPUT].setVoltage(0.f);
+					}
+					if (outputs[DOUT_OUTPUT].isConnected()){
+						outputs[DOUT_OUTPUT].setVoltage(10.f * env);
+					}
+					break;
+				case 2: // Sustain
+					if (inputs[AMOD_INPUT].isConnected()){
+						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
+					} else{
+						output = params[S_PARAM].getValue();
+					}
+					outputs[AGATE_OUTPUT].setVoltage(0.f);
+					outputs[DGATE_OUTPUT].setVoltage(0.f);
+					outputs[SGATE_OUTPUT].setVoltage(10.f);
+					outputs[RGATE_OUTPUT].setVoltage(0.f);
+					if (outputs[DOUT_OUTPUT].isConnected()){
+						outputs[DOUT_OUTPUT].setVoltage(0.f);
+					}
+					if (outputs[SOUT_OUTPUT].isConnected()){
+						outputs[SOUT_OUTPUT].setVoltage(10.f * env);
+					}
+					break;
+				default:
+					break;
+				}
+			} else{
+				stage = 3; //Release
+			}
+			if (stage == 3) //Release
+			{
+				env -= params[R_PARAM].getValue();
+				outputs[AGATE_OUTPUT].setVoltage(0.f);
+				outputs[DGATE_OUTPUT].setVoltage(0.f);
+				outputs[SGATE_OUTPUT].setVoltage(0.f);
+				outputs[RGATE_OUTPUT].setVoltage(10.f);
+
+				if (env < 0){
+					env = 0;
+					outputs[RGATE_OUTPUT].setVoltage(0.f);
+					isRunning = false;
+				}
+
+				if (inputs[RMOD_INPUT].isConnected()){
+					output = (inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue()) * env + env;
+				} else{
+					output = env;
+				}
+
+				if (outputs[SOUT_OUTPUT].isConnected()){
+					outputs[SOUT_OUTPUT].setVoltage(0.f);
+				}
+				if (outputs[ROUT_OUTPUT].isConnected()){
+					outputs[ROUT_OUTPUT].setVoltage(10.f * env);
+				}
+			}
+
+			//Output
+			// TODO need a global ring att and offset
+			if (inputs[GLOBALRING_INPUT].isConnected()){
+				if (outputs[MAINOUTP_OUTPUT].isConnected()){
+					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * inputs[GLOBALRING_INPUT].getVoltage());
+				}
+				if (outputs[MAINOUTM_OUTPUT].isConnected()){
+					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * inputs[GLOBALRING_INPUT].getVoltage());
+				}
+			} else{
+				if (outputs[MAINOUTP_OUTPUT].isConnected()){
+					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f);
+				}
+				if (outputs[MAINOUTM_OUTPUT].isConnected()){
+					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f);
+				}
+			}
+			
+		}
 	}
 };
 
