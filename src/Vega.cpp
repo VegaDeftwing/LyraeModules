@@ -126,17 +126,16 @@ struct Vega : Module {
 	bool DOutMode = false;
 	bool SOutMode = true;
 	bool ROutMode = false;
+	int AMMode = 0;
+	int DMMode = 0;
+	int SMMode = 0;
+	int RMMode = 0;
 
 	void displayActive(int lstage){
-		//TODO these lights need to change color depending on the output mode
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
 		lights[DGATE_LIGHT + 0].setBrightness(lstage == 1 ? 1.f : 0.f);
 		lights[SGATE_LIGHT + 0].setBrightness(lstage == 2 ? 1.f : 0.f);
 		lights[RGATE_LIGHT + 0].setBrightness(lstage == 3 ? 1.f : 0.f);
-		lights[AGATE_LIGHT + 2].setBrightness(AOutMode ? 1.f : 0.f);
-		lights[DGATE_LIGHT + 2].setBrightness(DOutMode ? 1.f : 0.f);
-		lights[SGATE_LIGHT + 2].setBrightness(SOutMode ? 0.6 : 0.f);
-		lights[RGATE_LIGHT + 2].setBrightness(ROutMode ? 1.f : 0.f);
 		outputs[AGATE_OUTPUT].setVoltage(lstage == 0 ? 10.f : 0.f);
 		outputs[DGATE_OUTPUT].setVoltage(lstage == 1 ? 10.f : 0.f);
 		outputs[SGATE_OUTPUT].setVoltage(lstage == 2 ? 10.f : 0.f);
@@ -147,11 +146,22 @@ struct Vega : Module {
 		if (inputs[lstage].isConnected()){
 			if (inputs[lstage].getVoltage() >= 5.f){
 				stage = lstage + 1;
+				if (lstage == 0){
+					// if the attack stage is skipped the envelope needs to be set high
+					// so the decay stage has something to work with
+					env = 1;
+				}
 			}
 		}
 		if (params[stage].getValue() >= .5f){
 			stage = lstage + 1;
+			if (lstage == 0){
+				// if the attack stage is skipped the envelope needs to be set high
+				// so the decay stage has something to work with
+				env = 1;
+			}
 		}
+		
 	}
 
 	void perStageOutput(int stage, bool mode){
@@ -168,6 +178,39 @@ struct Vega : Module {
 				outputs[stage].setVoltage(10.f * env);
 			}
 		}	
+	}
+
+	void setModeLight(int lstage, int lmode){
+			int offset = lstage * 3;
+			switch (lmode){
+			case 0:
+				lights[offset + 0].setBrightness(1.f);
+				lights[offset + 1].setBrightness(0.f);
+				lights[offset + 2].setBrightness(0.f);
+				break;
+			case 1:
+				lights[offset + 0].setBrightness(0.f);
+				lights[offset + 1].setBrightness(1.f);
+				lights[offset + 2].setBrightness(0.f);
+				break;
+			case 2:
+				lights[offset + 0].setBrightness(0.f);
+				lights[offset + 1].setBrightness(0.f);
+				lights[offset + 2].setBrightness(1.f);
+				break;
+
+			case 3:
+				lights[offset + 0].setBrightness(1.f);
+				lights[offset + 1].setBrightness(1.f);
+				lights[offset + 2].setBrightness(0.f);
+				break;
+			
+			default:
+				lights[offset + 0].setBrightness(0.f);
+				lights[offset + 1].setBrightness(0.f);
+				lights[offset + 2].setBrightness(0.f);
+				break;
+			}
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -225,10 +268,11 @@ struct Vega : Module {
 
 					break;
 				case 2: // Sustain
+					env = params[S_PARAM].getValue();
 					if (inputs[SMOD_INPUT].isConnected()){
 						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
 					} else{
-						output = params[S_PARAM].getValue();
+						output = env;
 					}
 					displayActive(2);
 					perStageOutput(2,SOutMode);
@@ -290,21 +334,51 @@ struct Vega : Module {
 			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
 			if (AOMDetect.process(params[AOUTMODE_PARAM].getValue())) {
 				AOutMode = !AOutMode;
+				lights[AGATE_LIGHT + 2].setBrightness(AOutMode ? 1.f : 0.f);
 			}
 			if (DOMDetect.process(params[DOUTMODE_PARAM].getValue())) {
 				DOutMode = !DOutMode;
+				lights[DGATE_LIGHT + 2].setBrightness(DOutMode ? 1.f : 0.f);
 			}
 			if (SOMDetect.process(params[SOUTMODE_PARAM].getValue())) {
 				SOutMode = !SOutMode;
+				lights[SGATE_LIGHT + 2].setBrightness(SOutMode ? 1.f : 0.f);
 			}
 			if (ROMDetect.process(params[ROUTMODE_PARAM].getValue())) {
 				ROutMode = !ROutMode;
+				lights[RGATE_LIGHT + 2].setBrightness(ROutMode ? 1.f : 0.f);
 			}
-			
-			
-			// TODO toggle states for Out Gate modes, then set outputs on each stage to either include the ring mod or not
-			// TODO toggle states for Ring Modes, update mode LED respectively
+			// toggle states for Modulation Modes, update mode LED respectively
+			if (AMDetect.process(params[ARINGMODE_PARAM].getValue())) {
+				AMMode = (AMMode + 1)%4;
+				setModeLight(0,AMMode);
+			}
+			if (DMDetect.process(params[DRINGMODE_PARAM].getValue())) {
+				DMMode = (DMMode + 1)%4;
+				setModeLight(1,DMMode);
+			}
+			if (SMDetect.process(params[SRINGMODE_PARAM].getValue())) {
+				SMMode = (SMMode + 1)%4;
+				setModeLight(2,SMMode);
+			}
+			if (RMDetect.process(params[RRINGMODE_PARAM].getValue())) {
+				RMMode = (RMMode + 1)%4;
+				setModeLight(3,RMMode);
+			}
 		}
+	}
+
+	void onAdd() override {
+		//Set the modulation mode LEDS to inital value at startup
+		lights[AMODE_LIGHT + 0].setBrightness(1.f);
+		lights[DMODE_LIGHT + 0].setBrightness(1.f);
+		lights[SMODE_LIGHT + 0].setBrightness(1.f);
+		lights[RMODE_LIGHT + 0].setBrightness(1.f);
+		//Set the outputmode LEDs to inital value at startup
+		lights[AGATE_LIGHT + 2].setBrightness(0.f);
+		lights[DGATE_LIGHT + 2].setBrightness(0.f);
+		lights[SGATE_LIGHT + 2].setBrightness(1.f);
+		lights[RGATE_LIGHT + 2].setBrightness(0.f);
 	}
 };
 
