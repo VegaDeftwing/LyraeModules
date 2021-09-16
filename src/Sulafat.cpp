@@ -28,7 +28,7 @@ struct Sulafat : Module {
 
 	Sulafat() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(KNOB_PARAM, 0.f, 7.f, 0.f, "");
+		configParam(KNOB_PARAM, 0.f, 7.f, 0.f, "Mode Selection");
 		processDivider.setDivision(64);
 	}
 
