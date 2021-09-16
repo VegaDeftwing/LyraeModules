@@ -62,14 +62,14 @@ struct Vega : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
-		AMODELIGHT_LIGHT,
-		AGATELIGHT_LIGHT,
-		DMODELIGHT_LIGHT,
-		DGATELIGHT_LIGHT,
-		SMODELIGHT_LIGHT,
-		SGATELIGHT_LIGHT,
-		RMODELIGHT_LIGHT,
-		RGATELIGHT_LIGHT,
+		ENUMS(AMODE_LIGHT, 3),
+		ENUMS(DMODE_LIGHT, 3),
+		ENUMS(SMODE_LIGHT, 3),
+		ENUMS(RMODE_LIGHT, 3),
+		ENUMS(AGATE_LIGHT, 3),
+		ENUMS(DGATE_LIGHT, 3),
+		ENUMS(SGATE_LIGHT, 3),
+		ENUMS(RGATE_LIGHT, 3),
 		NUM_LIGHTS
 	};
 
@@ -112,18 +112,23 @@ struct Vega : Module {
 	dsp::SchmittTrigger gateDetect;
 	bool AOutMode = false;
 	bool DOutMode = false;
-	bool SOutMode = false;
+	bool SOutMode = true;
 	bool ROutMode = false;
 
-	void displayActive(int mode){
-		lights[AGATELIGHT_LIGHT].setBrightness(mode == 0 ? 1.f : 0.f);
-		lights[DGATELIGHT_LIGHT].setBrightness(mode == 1 ? 1.f : 0.f);
-		lights[SGATELIGHT_LIGHT].setBrightness(mode == 2 ? 1.f : 0.f);
-		lights[RGATELIGHT_LIGHT].setBrightness(mode == 3 ? 1.f : 0.f);
-		outputs[AGATE_OUTPUT].setVoltage(mode == 0 ? 10.f : 0.f);
-		outputs[DGATE_OUTPUT].setVoltage(mode == 1 ? 10.f : 0.f);
-		outputs[SGATE_OUTPUT].setVoltage(mode == 2 ? 10.f : 0.f);
-		outputs[RGATE_OUTPUT].setVoltage(mode == 3 ? 10.f : 0.f);
+	void displayActive(int lstage){
+		//TODO these lights need to change color depending on the output mode
+		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
+		lights[DGATE_LIGHT + 0].setBrightness(lstage == 1 ? 1.f : 0.f);
+		lights[SGATE_LIGHT + 0].setBrightness(lstage == 2 ? 1.f : 0.f);
+		lights[RGATE_LIGHT + 0].setBrightness(lstage == 3 ? 1.f : 0.f);
+		lights[AGATE_LIGHT + 2].setBrightness(AOutMode ? 1.f : 0.f);
+		lights[DGATE_LIGHT + 2].setBrightness(DOutMode ? 1.f : 0.f);
+		lights[SGATE_LIGHT + 2].setBrightness(SOutMode ? 0.6 : 0.f);
+		lights[RGATE_LIGHT + 2].setBrightness(ROutMode ? 1.f : 0.f);
+		outputs[AGATE_OUTPUT].setVoltage(lstage == 0 ? 10.f : 0.f);
+		outputs[DGATE_OUTPUT].setVoltage(lstage == 1 ? 10.f : 0.f);
+		outputs[SGATE_OUTPUT].setVoltage(lstage == 2 ? 10.f : 0.f);
+		outputs[RGATE_OUTPUT].setVoltage(lstage == 3 ? 10.f : 0.f);
 	}
 
 	void forceAdvance(int lstage){
@@ -313,14 +318,14 @@ struct VegaWidget : ModuleWidget {
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(63.014, 119.784)), module, Vega::MAINOUTM_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(74.54, 119.823)), module, Vega::MAINOUTP_OUTPUT));
 
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 18.839)), module, Vega::AMODELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 18.839)), module, Vega::AGATELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 42.839)), module, Vega::DMODELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 42.839)), module, Vega::DGATELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 66.839)), module, Vega::SMODELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 67.089)), module, Vega::SGATELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 90.839)), module, Vega::RMODELIGHT_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 91.089)), module, Vega::RGATELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 18.839)), module, Vega::AMODE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 18.839)), module, Vega::AGATE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 42.839)), module, Vega::DMODE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 42.839)), module, Vega::DGATE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 66.839)), module, Vega::SMODE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 67.089)), module, Vega::SGATE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 90.839)), module, Vega::RMODE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 91.089)), module, Vega::RGATE_LIGHT));
 	}
 };
 
