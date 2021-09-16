@@ -80,23 +80,23 @@ struct Vega : Module {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "Attack Ring Attenuate");
 		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
-		configParam(A_PARAM, 0.01, 0.f, 0.f, "Attack Time");
+		configParam(A_PARAM, 0.5, 1.5, 1.045, "Attack Time");
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
-		configParam(ACURVE_PARAM, 0.f, 1.f, 0.f, "Attack Curve");
+		configParam(ACURVE_PARAM, 0.5, 2.f, 1.f, "Attack Curve");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
 		configParam(DRINGATT_PARAM, 0.f, 1.f, 0.f, "Decay Ring Attenuate");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
-		configParam(D_PARAM, 0.001, 0.f, 0.f, "Decay Time");
+		configParam(D_PARAM, 0.9, 1.5, 1.0648, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
 		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
 		configParam(SRINGATT_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
-		configParam(S_PARAM, 0.f, 1.f, 0.f, "Sustain Level");
+		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
 		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
-		configParam(R_PARAM, 0.001, 0.f, 0.f, "Release Time");
+		configParam(R_PARAM, 0.9, 1.5, 1.1836, "Release Time");
 		configParam(RRINGATT_PARAM, 0.f, 1.f, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "Release Curve");
@@ -163,7 +163,9 @@ struct Vega : Module {
 			if (gate){
 				switch (stage){
 				case 0: // Attack
-					env += params[A_PARAM].getValue();
+					env += simd::pow(.000315,params[A_PARAM].getValue());
+
+					
 					if (env > 1.0){
 						stage = 1;
 					}
@@ -178,7 +180,7 @@ struct Vega : Module {
 					
 					break;
 				case 1: // Decay
-					env -= params[D_PARAM].getValue();
+					env -= simd::pow(.000315,params[D_PARAM].getValue());
 					if (env <= params[S_PARAM].getValue() + 0.001){
 						stage = 2;
 					}
@@ -211,7 +213,7 @@ struct Vega : Module {
 			}
 			if (stage == 3) //Release
 			{
-				env -= params[R_PARAM].getValue();
+				env -= simd::pow(.000315,params[R_PARAM].getValue());
 				displayActive(3);
 
 				if (env < 0){
