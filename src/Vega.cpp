@@ -3,11 +3,15 @@
 
 struct Vega : Module {
 	enum ParamIds {
+		//Do Net Reorder these
+		AFORCEADV_PARAM,
+		DFORCEADV_PARAM,
+		SFORCEADV_PARAM,
+
 		AOUTMODE_PARAM,
 		A_PARAM,
 		ARINGATT_PARAM,
 		ARINGMODE_PARAM,
-		AFORCEADV_PARAM,
 		ACURVE_PARAM,
 		GLOBALRINGATT_PARAM,
 		GLOBALRINGOFFSET_PARAM,
@@ -15,13 +19,11 @@ struct Vega : Module {
 		D_PARAM,
 		DRINGATT_PARAM,
 		DRINGMODE_PARAM,
-		DFORCEADV_PARAM,
 		DCURVE_PARAM,
 		SOUTMODE_PARAM,
 		SRINGATT_PARAM,
 		SRINGMODE_PARAM,
 		S_PARAM,
-		SFORCEADV_PARAM,
 		ROUTMODE_PARAM,
 		R_PARAM,
 		RRINGATT_PARAM,
@@ -31,25 +33,29 @@ struct Vega : Module {
 		NUM_PARAMS
 	};
 	enum InputIds {
-		AMOD_INPUT,
+		//Do not reorder these!
 		AADV_INPUT,
-		DMOD_INPUT,
 		DADV_INPUT,
-		SMOD_INPUT,
 		SADV_INPUT,
+
+		AMOD_INPUT,
+		DMOD_INPUT,
+		SMOD_INPUT,
 		RMOD_INPUT,
 		GATE_INPUT,
 		GLOBALRING_INPUT,
 		NUM_INPUTS
 	};
 	enum OutputIds {
+		//Do not reorder these!
 		AOUT_OUTPUT,
-		AGATE_OUTPUT,
 		DOUT_OUTPUT,
-		DGATE_OUTPUT,
 		SOUT_OUTPUT,
-		SGATE_OUTPUT,
 		ROUT_OUTPUT,
+
+		AGATE_OUTPUT,
+		DGATE_OUTPUT,
+		SGATE_OUTPUT,
 		RGATE_OUTPUT,
 		MAINOUTM_OUTPUT,
 		MAINOUTP_OUTPUT,
@@ -67,7 +73,10 @@ struct Vega : Module {
 		NUM_LIGHTS
 	};
 
+	dsp::ClockDivider processDivider;
+
 	Vega() {
+		processDivider.setDivision(64);
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "Attack Ring Attenuate");
 		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
@@ -93,7 +102,7 @@ struct Vega : Module {
 		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "Release Curve");
 		configParam(ANGER_PARAM, 0.f, 1.f, 0.f, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 1.f, 0.f, "Gloal Ring Attenuate");
-		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 0.f, "Global Ring Offset");
+		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 	}
 
 	int stage = 0;
@@ -101,6 +110,46 @@ struct Vega : Module {
 	float env = 0.f;
 	float output = 0.f;
 	dsp::SchmittTrigger gateDetect;
+	bool AOutMode = false;
+	bool DOutMode = false;
+	bool SOutMode = false;
+	bool ROutMode = false;
+
+	void displayActive(int mode){
+		lights[AGATELIGHT_LIGHT].setBrightness(mode == 0 ? 1.f : 0.f);
+		lights[DGATELIGHT_LIGHT].setBrightness(mode == 1 ? 1.f : 0.f);
+		lights[SGATELIGHT_LIGHT].setBrightness(mode == 2 ? 1.f : 0.f);
+		lights[RGATELIGHT_LIGHT].setBrightness(mode == 3 ? 1.f : 0.f);
+		outputs[AGATE_OUTPUT].setVoltage(mode == 0 ? 10.f : 0.f);
+		outputs[DGATE_OUTPUT].setVoltage(mode == 1 ? 10.f : 0.f);
+		outputs[SGATE_OUTPUT].setVoltage(mode == 2 ? 10.f : 0.f);
+		outputs[RGATE_OUTPUT].setVoltage(mode == 3 ? 10.f : 0.f);
+	}
+
+	void forceAdvance(int lstage){
+		if (inputs[lstage].isConnected()){
+			if (inputs[lstage].getVoltage() >= 5.f){
+				stage = lstage + 1;
+			}
+		}
+		if (params[stage].getValue() >= .5f){
+			stage = lstage + 1;
+		}
+	}
+
+	void perStageOutput(int stage, bool mode, float output){
+		if (stage != 0){ //the attack stage dosen't need to turn off the release stage's output
+			if (outputs[stage-1].isConnected()){
+				outputs[stage-1].setVoltage(0.f);
+			}
+		}
+		if (outputs[stage].isConnected()){
+			if (mode == false) //default, not with ring{
+				outputs[stage].setVoltage(10.f * env);
+			} else{
+				outputs[stage].setVoltage(output);
+			}
+	}
 
 	void process(const ProcessArgs& args) override {
 		// First, we need to get the gate
@@ -123,13 +172,10 @@ struct Vega : Module {
 					} else{
 						output = env;
 					}
-					outputs[AGATE_OUTPUT].setVoltage(10.f);
-					outputs[DGATE_OUTPUT].setVoltage(0.f);
-					outputs[SGATE_OUTPUT].setVoltage(0.f);
-					outputs[RGATE_OUTPUT].setVoltage(0.f);
-					if (outputs[AOUT_OUTPUT].isConnected()){
-						outputs[AOUT_OUTPUT].setVoltage(10.f * env);
-					}
+					displayActive(0);
+					perStageOutput(0,false,output);
+					forceAdvance(0); //checks if the force advance is true internally
+					
 					break;
 				case 1: // Decay
 					env -= params[D_PARAM].getValue();
@@ -141,16 +187,10 @@ struct Vega : Module {
 					} else{
 						output = env;
 					}
-					outputs[AGATE_OUTPUT].setVoltage(0.f);
-					outputs[DGATE_OUTPUT].setVoltage(10.f);
-					outputs[SGATE_OUTPUT].setVoltage(0.f);
-					outputs[RGATE_OUTPUT].setVoltage(0.f);
-					if (outputs[AOUT_OUTPUT].isConnected()){
-						outputs[AOUT_OUTPUT].setVoltage(0.f);
-					}
-					if (outputs[DOUT_OUTPUT].isConnected()){
-						outputs[DOUT_OUTPUT].setVoltage(10.f * env);
-					}
+					displayActive(1);
+					perStageOutput(1,false,output);
+					forceAdvance(1); //checks if the force advance is true internally
+
 					break;
 				case 2: // Sustain
 					if (inputs[SMOD_INPUT].isConnected()){
@@ -158,16 +198,10 @@ struct Vega : Module {
 					} else{
 						output = params[S_PARAM].getValue();
 					}
-					outputs[AGATE_OUTPUT].setVoltage(0.f);
-					outputs[DGATE_OUTPUT].setVoltage(0.f);
-					outputs[SGATE_OUTPUT].setVoltage(10.f);
-					outputs[RGATE_OUTPUT].setVoltage(0.f);
-					if (outputs[DOUT_OUTPUT].isConnected()){
-						outputs[DOUT_OUTPUT].setVoltage(0.f);
-					}
-					if (outputs[SOUT_OUTPUT].isConnected()){
-						outputs[SOUT_OUTPUT].setVoltage(10.f * env);
-					}
+					displayActive(2);
+					perStageOutput(2,false,output);
+					forceAdvance(2); //checks if the force advance is true internally
+
 					break;
 				default:
 					break;
@@ -178,10 +212,7 @@ struct Vega : Module {
 			if (stage == 3) //Release
 			{
 				env -= params[R_PARAM].getValue();
-				outputs[AGATE_OUTPUT].setVoltage(0.f);
-				outputs[DGATE_OUTPUT].setVoltage(0.f);
-				outputs[SGATE_OUTPUT].setVoltage(0.f);
-				outputs[RGATE_OUTPUT].setVoltage(10.f);
+				displayActive(3);
 
 				if (env < 0){
 					env = 0;
@@ -195,32 +226,31 @@ struct Vega : Module {
 					output = env;
 				}
 
-				if (outputs[SOUT_OUTPUT].isConnected()){
-					outputs[SOUT_OUTPUT].setVoltage(0.f);
-				}
-				if (outputs[ROUT_OUTPUT].isConnected()){
-					outputs[ROUT_OUTPUT].setVoltage(10.f * env);
-				}
+				perStageOutput(3,false,output);
 			}
 
 			//Output
-			// TODO need a global ring att and offset
 			if (inputs[GLOBALRING_INPUT].isConnected()){
 				if (outputs[MAINOUTP_OUTPUT].isConnected()){
-					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * inputs[GLOBALRING_INPUT].getVoltage());
+					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * inputs[GLOBALRING_INPUT].getVoltage());
+					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 			} else{
+				// If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
 				if (outputs[MAINOUTP_OUTPUT].isConnected()){
-					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f);
+					outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f);
+					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 			}
 			
+		}
+		if (processDivider.process()){
+			// TODO toggle states for Out Gate modes, then set outputs on each stage to either include the ring mod or not
+			// TODO toggle states for Ring Modes, update mode LED respectively
 		}
 	}
 };
