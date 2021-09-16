@@ -9,22 +9,23 @@ struct Vega : Module {
 		SFORCEADV_PARAM,
 
 		AOUTMODE_PARAM,
+		DOUTMODE_PARAM,
+		SOUTMODE_PARAM,
+		ROUTMODE_PARAM,
+
 		A_PARAM,
 		ARINGATT_PARAM,
 		ARINGMODE_PARAM,
 		ACURVE_PARAM,
 		GLOBALRINGATT_PARAM,
 		GLOBALRINGOFFSET_PARAM,
-		DOUTMODE_PARAM,
 		D_PARAM,
 		DRINGATT_PARAM,
 		DRINGMODE_PARAM,
 		DCURVE_PARAM,
-		SOUTMODE_PARAM,
 		SRINGATT_PARAM,
 		SRINGMODE_PARAM,
 		S_PARAM,
-		ROUTMODE_PARAM,
 		R_PARAM,
 		RRINGATT_PARAM,
 		RRINGMODE_PARAM,
@@ -78,38 +79,49 @@ struct Vega : Module {
 	Vega() {
 		processDivider.setDivision(64);
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "Attack Ring Attenuate");
+		configParam(ARINGATT_PARAM, 0.f, 0.2, 0.f, "Attack Ring Attenuate");
 		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
-		configParam(A_PARAM, 0.5, 1.5, 1.045, "Attack Time");
+		configParam(A_PARAM, 0.5, 1.5, 1.1125, "Attack Time");
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
 		configParam(ACURVE_PARAM, 0.5, 2.f, 1.f, "Attack Curve");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
-		configParam(DRINGATT_PARAM, 0.f, 1.f, 0.f, "Decay Ring Attenuate");
+		configParam(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
-		configParam(D_PARAM, 0.9, 1.5, 1.0648, "Decay Time");
+		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
 		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
-		configParam(SRINGATT_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Attenuate");
+		configParam(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
 		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
 		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
-		configParam(R_PARAM, 0.9, 1.5, 1.1836, "Release Time");
-		configParam(RRINGATT_PARAM, 0.f, 1.f, 0.f, "Release Ring Attenuate");
+		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
+		configParam(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "Release Curve");
-		configParam(ANGER_PARAM, 0.f, 1.f, 0.f, "Transistion Time Control");
-		configParam(GLOBALRINGATT_PARAM, 0.f, 1.f, 0.f, "Gloal Ring Attenuate");
+		configParam(ANGER_PARAM, 1.f, 20.f, 10.f, "Transistion Time Control");
+		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 	}
 
 	int stage = 0;
 	bool isRunning = false;
+	float modulation = 0.f;
 	float env = 0.f;
 	float output = 0.f;
 	dsp::SchmittTrigger gateDetect;
+	//Output Mode Triggers
+	dsp::SchmittTrigger AOMDetect;
+	dsp::SchmittTrigger DOMDetect;
+	dsp::SchmittTrigger SOMDetect;
+	dsp::SchmittTrigger ROMDetect;
+	//Modulation Mode Triggers
+	dsp::SchmittTrigger AMDetect;
+	dsp::SchmittTrigger DMDetect;
+	dsp::SchmittTrigger SMDetect;
+	dsp::SchmittTrigger RMDetect;
 	bool AOutMode = false;
 	bool DOutMode = false;
 	bool SOutMode = true;
@@ -142,18 +154,20 @@ struct Vega : Module {
 		}
 	}
 
-	void perStageOutput(int stage, bool mode, float output){
+	void perStageOutput(int stage, bool mode){
+		//accessing output and env as globals. This is probably frowed upon but oh well.
 		if (stage != 0){ //the attack stage dosen't need to turn off the release stage's output
 			if (outputs[stage-1].isConnected()){
 				outputs[stage-1].setVoltage(0.f);
 			}
 		}
 		if (outputs[stage].isConnected()){
-			if (mode == false) //default, not with ring{
+			if (mode){
+				outputs[stage].setVoltage(10.f * output * params[GLOBALRINGOFFSET_PARAM].getValue());
+			} else {
 				outputs[stage].setVoltage(10.f * env);
-			} else{
-				outputs[stage].setVoltage(output);
 			}
+		}	
 	}
 
 	void process(const ProcessArgs& args) override {
@@ -165,37 +179,48 @@ struct Vega : Module {
 		}
 
 		if (isRunning) {
+			float anger = params[ANGER_PARAM].getValue();
 			if (gate){
 				switch (stage){
 				case 0: // Attack
 					env += simd::pow(.000315,params[A_PARAM].getValue());
 
-					
 					if (env > 1.0){
 						stage = 1;
 					}
+
+					modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
+												inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+												(simd::fmax(0,anger*env-anger+1)));
+
 					if (inputs[AMOD_INPUT].isConnected()){
-						output = (inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue()) * env + env;
+						output = modulation * env + env;
 					} else{
 						output = env;
 					}
 					displayActive(0);
-					perStageOutput(0,false,output);
+					perStageOutput(0,AOutMode);
 					forceAdvance(0); //checks if the force advance is true internally
 					
 					break;
 				case 1: // Decay
 					env -= simd::pow(.000315,params[D_PARAM].getValue());
+
+					//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
+					modulation = simd::crossfade(inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+												 inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+												 (simd::fmax(0,anger*(-env)-anger+(1/(params[S_PARAM].getValue()+0.0001)))));
+
 					if (env <= params[S_PARAM].getValue() + 0.001){
 						stage = 2;
 					}
 					if (inputs[DMOD_INPUT].isConnected()){
-						output = (inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue()) * env + env;
+						output = modulation * env + env;
 					} else{
 						output = env;
 					}
 					displayActive(1);
-					perStageOutput(1,false,output);
+					perStageOutput(1,DOutMode);
 					forceAdvance(1); //checks if the force advance is true internally
 
 					break;
@@ -206,7 +231,7 @@ struct Vega : Module {
 						output = params[S_PARAM].getValue();
 					}
 					displayActive(2);
-					perStageOutput(2,false,output);
+					perStageOutput(2,SOutMode);
 					forceAdvance(2); //checks if the force advance is true internally
 
 					break;
@@ -219,6 +244,12 @@ struct Vega : Module {
 			if (stage == 3) //Release
 			{
 				env -= simd::pow(.000315,params[R_PARAM].getValue());
+
+				//TODO The morphing equation still isnt right. My brain hurts.
+				modulation = simd::crossfade(inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+											 inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue(),
+											 (simd::fmax(0,anger*(-env)-anger+(1/(params[S_PARAM].getValue()+0.0001)))));
+
 				displayActive(3);
 
 				if (env < 0){
@@ -228,12 +259,12 @@ struct Vega : Module {
 				}
 
 				if (inputs[RMOD_INPUT].isConnected()){
-					output = (inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue()) * env + env;
+					output = modulation * env + env;
 				} else{
 					output = env;
 				}
 
-				perStageOutput(3,false,output);
+				perStageOutput(3,ROutMode);
 			}
 
 			//Output
@@ -256,6 +287,21 @@ struct Vega : Module {
 			
 		}
 		if (processDivider.process()){
+			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
+			if (AOMDetect.process(params[AOUTMODE_PARAM].getValue())) {
+				AOutMode = !AOutMode;
+			}
+			if (DOMDetect.process(params[DOUTMODE_PARAM].getValue())) {
+				DOutMode = !DOutMode;
+			}
+			if (SOMDetect.process(params[SOUTMODE_PARAM].getValue())) {
+				SOutMode = !SOutMode;
+			}
+			if (ROMDetect.process(params[ROUTMODE_PARAM].getValue())) {
+				ROutMode = !ROutMode;
+			}
+			
+			
 			// TODO toggle states for Out Gate modes, then set outputs on each stage to either include the ring mod or not
 			// TODO toggle states for Ring Modes, update mode LED respectively
 		}
