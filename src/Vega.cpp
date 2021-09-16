@@ -3,22 +3,24 @@
 
 struct Vega : Module {
 	enum ParamIds {
-		ARINGATT_PARAM,
 		AOUTMODE_PARAM,
 		A_PARAM,
+		ARINGATT_PARAM,
 		ARINGMODE_PARAM,
-		ACURVE_PARAM,
 		AFORCEADV_PARAM,
-		DRINGATT_PARAM,
+		ACURVE_PARAM,
+		GLOBALRINGATT_PARAM,
+		GLOBALRINGOFFSET_PARAM,
 		DOUTMODE_PARAM,
 		D_PARAM,
+		DRINGATT_PARAM,
 		DRINGMODE_PARAM,
-		DCURVE_PARAM,
 		DFORCEADV_PARAM,
-		SRINGATT_PARAM,
+		DCURVE_PARAM,
 		SOUTMODE_PARAM,
-		S_PARAM,
+		SRINGATT_PARAM,
 		SRINGMODE_PARAM,
+		S_PARAM,
 		SFORCEADV_PARAM,
 		ROUTMODE_PARAM,
 		R_PARAM,
@@ -54,34 +56,44 @@ struct Vega : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
+		AMODELIGHT_LIGHT,
+		AGATELIGHT_LIGHT,
+		DMODELIGHT_LIGHT,
+		DGATELIGHT_LIGHT,
+		SMODELIGHT_LIGHT,
+		SGATELIGHT_LIGHT,
+		RMODELIGHT_LIGHT,
+		RGATELIGHT_LIGHT,
 		NUM_LIGHTS
 	};
 
 	Vega() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(A_PARAM, 0.01, 0.f, 0.f, "");
-		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(ACURVE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(DRINGATT_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(D_PARAM, 0.001, 0.f, 0.f, "");
-		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(SRINGATT_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(S_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(R_PARAM, 0.001, 0.f, 0.f, "");
-		configParam(RRINGATT_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(ANGER_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(ARINGATT_PARAM, 0.f, 1.f, 0.f, "Attack Ring Attenuate");
+		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
+		configParam(A_PARAM, 0.01, 0.f, 0.f, "Attack Time");
+		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
+		configParam(ACURVE_PARAM, 0.f, 1.f, 0.f, "Attack Curve");
+		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
+		configParam(DRINGATT_PARAM, 0.f, 1.f, 0.f, "Decay Ring Attenuate");
+		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
+		configParam(D_PARAM, 0.001, 0.f, 0.f, "Decay Time");
+		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
+		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "Decay Curve");
+		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
+		configParam(SRINGATT_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Attenuate");
+		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
+		configParam(S_PARAM, 0.f, 1.f, 0.f, "Sustain Level");
+		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
+		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
+		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		configParam(R_PARAM, 0.001, 0.f, 0.f, "Release Time");
+		configParam(RRINGATT_PARAM, 0.f, 1.f, 0.f, "Release Ring Attenuate");
+		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "Release Curve");
+		configParam(ANGER_PARAM, 0.f, 1.f, 0.f, "Transistion Time Control");
+		configParam(GLOBALRINGATT_PARAM, 0.f, 1.f, 0.f, "Gloal Ring Attenuate");
+		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 0.f, "Global Ring Offset");
 	}
 
 	int stage = 0;
@@ -141,7 +153,7 @@ struct Vega : Module {
 					}
 					break;
 				case 2: // Sustain
-					if (inputs[AMOD_INPUT].isConnected()){
+					if (inputs[SMOD_INPUT].isConnected()){
 						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
 					} else{
 						output = params[S_PARAM].getValue();
@@ -219,53 +231,64 @@ struct VegaWidget : ModuleWidget {
 		setModule(module);
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Vega.svg")));
 
-		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH*12, 5))); // Top
-		addChild(createWidget<Bolt>(Vec(box.size.x - 12 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH))); //Bottom
+		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH*15, 5))); // Top
+		addChild(createWidget<Bolt>(Vec(box.size.x - 15 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH))); //Bottom
 
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(19.964, 10.795)), module, Vega::ARINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(45.599, 10.839)), module, Vega::AOUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.916, 14.974)), module, Vega::AOUTMODE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 14.467)), module, Vega::A_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(28.186, 18.839)), module, Vega::ARINGMODE_PARAM));
+		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 14.839)), module, Vega::ARINGATT_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 14.839)), module, Vega::ARINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 22.839)), module, Vega::AFORCEADV_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 24.119)), module, Vega::ACURVE_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(36.32, 26.798)), module, Vega::AFORCEADV_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(19.964, 34.795)), module, Vega::DRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(45.599, 34.839)), module, Vega::DOUTMODE_PARAM));
+		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(106.448, 29.573)), module, Vega::GLOBALRINGATT_PARAM));
+		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(113.94, 29.573)), module, Vega::GLOBALRINGOFFSET_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 38.839)), module, Vega::DOUTMODE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 38.467)), module, Vega::D_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(28.186, 42.839)), module, Vega::DRINGMODE_PARAM));
+		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 38.839)), module, Vega::DRINGATT_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 38.839)), module, Vega::DRINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 46.839)), module, Vega::DFORCEADV_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 48.119)), module, Vega::DCURVE_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(36.32, 50.798)), module, Vega::DFORCEADV_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(19.964, 58.795)), module, Vega::SRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(45.599, 59.089)), module, Vega::SOUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 63.089)), module, Vega::SOUTMODE_PARAM));
+		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 62.839)), module, Vega::SRINGATT_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 62.839)), module, Vega::SRINGMODE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 66.839)), module, Vega::S_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(28.186, 66.839)), module, Vega::SRINGMODE_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(36.32, 74.798)), module, Vega::SFORCEADV_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(45.599, 83.089)), module, Vega::ROUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 70.839)), module, Vega::SFORCEADV_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 87.089)), module, Vega::ROUTMODE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 86.467)), module, Vega::R_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(23.709, 86.839)), module, Vega::RRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(31.843, 94.798)), module, Vega::RRINGMODE_PARAM));
+		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 86.839)), module, Vega::RRINGATT_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODE_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 96.118)), module, Vega::RCURVE_PARAM));
-		addParam(createParamCentered<HexKnob>(mm2px(Vec(32.372, 110.027)), module, Vega::ANGER_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
 
-		addInput(createInputCentered<InJack>(mm2px(Vec(24.098, 14.839)), module, Vega::AMOD_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(32.274, 22.839)), module, Vega::AADV_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(24.098, 38.839)), module, Vega::DMOD_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(32.274, 46.839)), module, Vega::DADV_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(24.098, 62.839)), module, Vega::SMOD_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(32.274, 70.839)), module, Vega::SADV_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(27.797, 90.839)), module, Vega::RMOD_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 14.839)), module, Vega::AMOD_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 22.839)), module, Vega::AADV_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 38.839)), module, Vega::DMOD_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 46.839)), module, Vega::DADV_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 62.839)), module, Vega::SMOD_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 70.839)), module, Vega::SADV_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 86.839)), module, Vega::RMOD_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(8.332, 110.027)), module, Vega::GATE_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(20.23, 110.027)), module, Vega::GLOBALRING_INPUT));
 
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(49.687, 14.839)), module, Vega::AOUT_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(57.864, 22.839)), module, Vega::AGATE_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(49.687, 38.839)), module, Vega::DOUT_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(57.864, 46.839)), module, Vega::DGATE_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(49.687, 63.089)), module, Vega::SOUT_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(57.864, 71.089)), module, Vega::SGATE_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(49.687, 87.089)), module, Vega::ROUT_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(57.864, 95.089)), module, Vega::RGATE_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(47.774, 119.85)), module, Vega::MAINOUTM_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(59.3, 119.889)), module, Vega::MAINOUTP_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 14.839)), module, Vega::AOUT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 22.839)), module, Vega::AGATE_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 38.839)), module, Vega::DOUT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 46.839)), module, Vega::DGATE_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 63.089)), module, Vega::SOUT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 71.089)), module, Vega::SGATE_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 87.089)), module, Vega::ROUT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 95.089)), module, Vega::RGATE_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(63.014, 119.784)), module, Vega::MAINOUTM_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(74.54, 119.823)), module, Vega::MAINOUTP_OUTPUT));
+
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 18.839)), module, Vega::AMODELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 18.839)), module, Vega::AGATELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 42.839)), module, Vega::DMODELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 42.839)), module, Vega::DGATELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 66.839)), module, Vega::SMODELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 67.089)), module, Vega::SGATELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(37.108, 90.839)), module, Vega::RMODELIGHT_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(66.712, 91.089)), module, Vega::RGATELIGHT_LIGHT));
 	}
 };
 

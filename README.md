@@ -47,7 +47,8 @@ This is followed by the **ring + adv** stage. The controls in order from left to
 
 This section offers 4 modes: Ring, Add, Attack-Enveloped addition, and Decay-Enveloped addition.
 * Ring will apply a basic multiplication between the input signal and the respective envelope segment. This has the downside of the 'peak' of the attack causing a very strong modulation, which may transition awkwardly, even with interpolation.
-* Addition will do a basic addition of the input signal and the respective envelope segment. This keeps the level of modulation constant, but may mean that the start of the attack stage and end of the release stage can have gaps or extra bumps.
+  > Note, technically the full math is [(ring_input * attenuverter) * envelope_stage **+ enevelope_stage**] this addition is done so that the ring modulation is still centered around the evelope stage
+* Addition will do a basic addition (unity sum) of the input signal and the respective envelope segment. This keeps the level of modulation constant, but may mean that the start of the attack stage and end of the release stage can have gaps or extra bumps.
 * Attack-Enveloped Addition will cause the input signal to be the same as the ring modulated input, until the stage's signal goes over 1V. This gives a gental fade in of the modulation, without making it overtake the signal - **only available on the attack stage**
 * Decay-Enveloped Addition will cause the signal to be the simple sum of the two signals until the stage is only 1V above the next stage's level (sustain level or 0v on release) where instead the signal will be the ring-modulated signal, allowing for a cleaner fade to the next stage - **only available in the decay and release stages**
   * if there is no ring input on the sustain stage, the decay stage will fade to being multiplied by 0 instead of fading to being multiplied by the sustain level. This is provide a smooth transition if the sustain stage has no modulation
