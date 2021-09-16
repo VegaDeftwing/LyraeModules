@@ -130,6 +130,7 @@ struct Vega : Module {
 	int DMMode = 0;
 	int SMMode = 0;
 	int RMMode = 0;
+	bool outputAlt = false; //Use negitive output as dry
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -317,7 +318,11 @@ struct Vega : Module {
 					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+					if (outputAlt){
+						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+					} else{
+						outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+					}
 				}
 			} else{
 				// If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
@@ -325,7 +330,11 @@ struct Vega : Module {
 					outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+					if (outputAlt){
+						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+					} else{
+						outputs[MAINOUTM_OUTPUT].setVoltage(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+					}
 				}
 			}
 			
@@ -447,7 +456,29 @@ struct VegaWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 90.839)), module, Vega::RMODE_LIGHT));
 		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 91.089)), module, Vega::RGATE_LIGHT));
 	}
-};
 
+	void appendContextMenu(Menu *menu) override{
+		Vega *vega = dynamic_cast<Vega *>(module);
+		assert(vega);
+
+		struct VegaOutputAltItem : MenuItem{
+            Vega *vega;
+
+            void onAction(const event::Action &e) override
+            {
+                vega->outputAlt = !vega->outputAlt;
+            }
+            void step() override
+            {
+                rightText = CHECKMARK(vega->outputAlt);
+            }
+        };
+
+		menu->addChild(new MenuEntry);
+		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
+        altOutput->vega = vega;
+		menu->addChild(altOutput);
+	}
+};
 
 Model* modelVega = createModel<Vega, VegaWidget>("Vega");
