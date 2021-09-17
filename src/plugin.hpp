@@ -8,7 +8,8 @@ using namespace rack;
 extern Plugin* pluginInstance;
 extern Model* modelSulafat;
 extern Model* modelGamma;
-extern Model* modelVega;
+extern Model* modelDelta;
+//extern Model* modelVega;
 
 // Declare each Model, defined in each module source file
 // extern Model* modelMyModule;
