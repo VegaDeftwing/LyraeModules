@@ -74,6 +74,19 @@ Idea: 8 bit A→D→A, but the most significant bit has a different input signal
 Idea: Sustain from that MIT licenced repo
 ## δ1 Lyra
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
+
+This module, frankly, is pretty useless.
+The top section is 3 cascaded ring-mod's, that is if you label them from top to bottom as A, B, C the operation is
+Left  = Left * -(A * (B * C))
+Right = Right * (A * (B * C))
+Each stage, A, B, C has it's own attenuator (left) and offset (right).
+If you would like to bypass this stage (other than inverting the left signal), just set all the offset knobs to their max value. **if you do not set the offset high or provide input for each of the 3 stages you will not get any output!**
+
+Next, is the phase-selected ring mod section. The upper, middle input is the phase input. at -5V the left input is used, at 0V the middle, and at +5V the right. Values between this will be a crossfade between two inputs. For example, at +2.5V the signal used will be the sum of half of the middle input and half of the right input. The LED on the upper left will show what output mix is being used by using full RED for the left input, GREEN for the middle input, and BLUE for the right input. Crossfade'd states will show a mix of RED and GREEN (Yellow) or GREEN and BLUE (Teelish). If no phase input is connected or if the module is set to "CLOCK MODE" in the right click menu, then the button will advance the stage directly, no smoothing will be applied.
+
+Finally, in the last section, the two inputs are actually **gate** inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right. 
+
+
 ## ε Lyrae
 > Epsilon Lyrae (ε Lyr, ε Lyrae), also known as the Double Double, is a multiple star system of at least five stars
 

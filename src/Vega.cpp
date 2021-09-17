@@ -1,6 +1,5 @@
 #include "plugin.hpp"
 
-
 struct Vega : Module {
 	enum ParamIds {
 		//Do Net Reorder these
@@ -222,8 +221,11 @@ struct Vega : Module {
 			stage = 0; //Attack
 		}
 
+		//TODO none of the stages have exp/lin/log control yet
+
 		if (isRunning) {
 			float anger = params[ANGER_PARAM].getValue();
+			float sus = params[S_PARAM].getValue();
 			if (gate){
 				switch (stage){
 				case 0: // Attack
@@ -233,15 +235,46 @@ struct Vega : Module {
 						stage = 1;
 					}
 
-					modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
-												inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
-												(simd::fmax(0,anger*env-anger+1)));
+					//TODO Right now this is crossfading the modulation signal input. This would be okay if the modulation
+					// method were the same on each stage, but if one stage is RM and the other Add, this probably fails
+					// to make smooth transitions due to RM and ADD leading to different signal amplitudes. A quick test
+					// makes it seem like this isn't a problem, but I'm not sure.
 
 					if (inputs[AMOD_INPUT].isConnected()){
-						output = modulation * env + env;
+						modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
+													inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+													(simd::fmax(0,anger*env-anger+1)));
+						switch (AMMode){
+						case 0: // Ring
+							output = modulation * env + env;
+							break;
+						case 1: // Addition
+							output = modulation + env;
+							break;
+						case 3: // Self-Env Addition
+							//TODO this might not be working, or be working to well? - it seems to be the same as basic ring
+							if (env <= 0.1){ //first 10% of Attack stage
+								output = (modulation * env * 10) + env;
+							} else{
+								output = modulation + env;
+							}
+							break;
+						case 4: // Non offset Ring
+							//This is only very sightly different from additon, but creates smoother transitions at start of env
+							// Might want to make this the Mode 3?
+							output = modulation * env;
+							break;
+						default:
+							output = modulation * env + env;
+							break;
+						}
 					} else{
+						modulation = simd::crossfade(0.f,
+							inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+							(simd::fmax(0,anger*env-anger+1)));
 						output = env;
 					}
+
 					displayActive(0);
 					perStageOutput(0,AOutMode);
 					forceAdvance(0); //checks if the force advance is true internally
@@ -250,26 +283,54 @@ struct Vega : Module {
 				case 1: // Decay
 					env -= simd::pow(.000315,params[D_PARAM].getValue());
 
-					//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
-					modulation = simd::crossfade(inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
-												 inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-												 (simd::fmax(0,anger*(-env)-anger+(1/(params[S_PARAM].getValue()+0.0001)))));
 
-					if (env <= params[S_PARAM].getValue() + 0.001){
+					if (env <= sus + 0.001){
 						stage = 2;
 					}
+
 					if (inputs[DMOD_INPUT].isConnected()){
-						output = modulation * env + env;
+						//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
+						modulation = simd::crossfade(inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+													inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+													(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+						switch (DMMode){
+						case 0: // Ring
+							output = modulation * env + env;
+							break;
+						case 1: // Addition
+							output = modulation + env;
+							break;
+						case 3: // Self-Env Addition
+							//TODO this doesn't seem to be working
+							if ((-env + 1 * (1/sus)) <= 0.1){ //first 10% of decay stage
+								output = (modulation * env * 10) + env;
+							} else{
+								output = modulation + env;
+							}
+							break;
+						case 4: // Non offset Ring
+							//TODO this might be the same as basic addition?
+							output = modulation * env;
+							break;
+						default:
+							output = modulation * env + env;
+							break;
+						}
 					} else{
-						output = env;
+						modulation = simd::crossfade(0.f,
+													inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+													(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+						output = modulation * env + env;
 					}
+
+
 					displayActive(1);
 					perStageOutput(1,DOutMode);
 					forceAdvance(1); //checks if the force advance is true internally
 
 					break;
 				case 2: // Sustain
-					env = params[S_PARAM].getValue();
+					env = sus;
 					if (inputs[SMOD_INPUT].isConnected()){
 						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
 					} else{
@@ -290,23 +351,48 @@ struct Vega : Module {
 			{
 				env -= simd::pow(.000315,params[R_PARAM].getValue());
 
-				//TODO The morphing equation still isnt right. My brain hurts.
-				modulation = simd::crossfade(inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-											 inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue(),
-											 (simd::fmax(0,anger*(-env)-anger+(1/(params[S_PARAM].getValue()+0.0001)))));
 
 				displayActive(3);
 
-				if (env < 0){
-					env = 0;
-					outputs[RGATE_OUTPUT].setVoltage(0.f);
-					isRunning = false;
+				if (inputs[RMOD_INPUT].isConnected()){
+					modulation = simd::crossfade(inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue(),
+												inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+												(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+					switch (RMMode){
+					case 0: // Ring
+						output = modulation * env + env;
+						break;
+					case 1: // Addition
+						output = modulation + env;
+						break;
+					case 3: // Self-Env Addition
+						//TODO This doesn't seem to be working
+						if ((-env + sus * (1/sus)) <= 0.1){ //first 10% of release stage
+							output = (modulation * env * 10) + env;
+						} else{
+							output = modulation + env;
+						}
+						break;
+					case 4: // Non offset Ring
+						//TODO This might be the same as basic addition
+						output = modulation * env;
+						break;
+					default:
+						output = modulation * env + env;
+						break;
+					}
+				} else{
+					modulation = simd::crossfade(0.f,
+												inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
+												(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+					output = modulation * env + env;
 				}
 
-				if (inputs[RMOD_INPUT].isConnected()){
-					output = modulation * env + env;
-				} else{
-					output = env;
+				if (env <= 0){
+					env = 0;
+					output = 0.f;
+					outputs[RGATE_OUTPUT].setVoltage(0.f);
+					isRunning = false;
 				}
 
 				perStageOutput(3,ROutMode);
@@ -319,6 +405,7 @@ struct Vega : Module {
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
 					if (outputAlt){
+						//Right Click menu option
 						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
 					} else{
 						outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
@@ -331,6 +418,7 @@ struct Vega : Module {
 				}
 				if (outputs[MAINOUTM_OUTPUT].isConnected()){
 					if (outputAlt){
+						//Right click menu option
 						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
 					} else{
 						outputs[MAINOUTM_OUTPUT].setVoltage(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
