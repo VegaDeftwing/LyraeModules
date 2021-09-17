@@ -1,7 +1,7 @@
 {
   "slug": "LyraeModules",
   "name": "LyraeModules",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "GPL-3.0-or-later",
   "brand": "LyraeModules",
   "author": "Vega Deftwing",
@@ -15,7 +15,8 @@
       "name": "Sulafat",
       "description": "Distortion at 15 Solar Radii",
       "tags": [
-        "Distortion","Waveshaper"
+        "Distortion",
+        "Waveshaper"
       ]
     },
     {
@@ -24,6 +25,14 @@
       "description": "",
       "tags": [
         "Utility"
+      ]
+    },
+    {
+      "slug": "Delta",
+      "name": "Delta",
+      "description": "So I heard you like ringmod",
+      "tags": [
+        "Ring modulator"
       ]
     },
     {
