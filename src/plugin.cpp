@@ -9,7 +9,7 @@ void init(Plugin* p) {
 	p->addModel(modelSulafat);
 	p->addModel(modelGamma);
 	p->addModel(modelDelta);
-	//p->addModel(modelVega);
+	p->addModel(modelVega);
 	// Add modules here
 	// p->addModel(modelMyModule);
 
