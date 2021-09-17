@@ -38,7 +38,7 @@
      inkscape:window-x="4"
      inkscape:window-y="16"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer6"
+     inkscape:current-layer="layer2"
      inkscape:snap-nodes="true"
      inkscape:object-paths="true"
      inkscape:rotation="-1"
@@ -356,12 +356,28 @@
          cy="62.151852"
          r="0.214266" />
     </g>
+    <g
+       aria-label="δ"
+       id="text38729"
+       style="display:inline;font-size:4.1003px;line-height:1.25;font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal';fill:#f9f9f9;stroke:#333333;stroke-width:0">
+      <path
+         d="m 6.4098255,123.85473 c -0.447879,0 -0.7885192,0.20817 -0.7885192,0.58245 0,0.2271 0.1051358,0.3869 0.4079272,0.5425 -0.3742838,0.14719 -0.6728697,0.49414 -0.6728697,1.003 0,0.58666 0.3658729,1.07028 0.9924828,1.07028 0.6224045,0 0.9882774,-0.50885 0.9882774,-1.07238 0,-0.63713 -0.2775587,-0.91679 -0.849498,-1.15229 -0.3658729,-0.14719 -0.5004468,-0.21027 -0.5004468,-0.40793 0,-0.18504 0.1556011,-0.29228 0.3995164,-0.29228 0.19345,0 0.3490511,0.04 0.5382957,0.18714 l 0.178731,-0.21027 c -0.19345,-0.1598 -0.3974136,-0.25022 -0.6938968,-0.25022 z m -0.1156495,1.2406 c 0.5025495,0.21027 0.6602534,0.3848 0.6602534,0.88525 0,0.50885 -0.2228881,0.78221 -0.6055828,0.78221 -0.3826946,0 -0.6076854,-0.29438 -0.6076854,-0.77801 0,-0.42264 0.1534984,-0.70651 0.5530148,-0.88945 z"
+         id="path50733" />
+    </g>
+    <g
+       aria-label="1"
+       id="text47095"
+       style="display:inline;font-size:1.88079px;line-height:1.25;font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal';fill:#f9f9f9;stroke:#333333;stroke-width:0">
+      <path
+         d="M 8.1047255,122.9994 H 7.9629429 l -0.3954482,0.24498 0.070409,0.11574 0.3047844,-0.18518 v 1.02044 h -0.326968 v 0.13214 h 0.7667836 v -0.13214 H 8.1047255 Z"
+         id="path50754" />
+    </g>
   </g>
   <g
      inkscape:groupmode="layer"
      id="layer6"
      inkscape:label="components"
-     style="display:inline">
+     style="display:none">
     <circle
        style="display:inline;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:1.445;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path118814"
@@ -537,22 +553,6 @@
        cy="63.412815"
        r="1.0004772"
        inkscape:label="Stage" />
-    <g
-       aria-label="δ"
-       id="text38729"
-       style="font-size:4.1003px;line-height:1.25;font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal';fill:#f9f9f9;stroke:#333333;stroke-width:0">
-      <path
-         d="m 6.4098255,123.85473 c -0.447879,0 -0.7885192,0.20817 -0.7885192,0.58245 0,0.2271 0.1051358,0.3869 0.4079272,0.5425 -0.3742838,0.14719 -0.6728697,0.49414 -0.6728697,1.003 0,0.58666 0.3658729,1.07028 0.9924828,1.07028 0.6224045,0 0.9882774,-0.50885 0.9882774,-1.07238 0,-0.63713 -0.2775587,-0.91679 -0.849498,-1.15229 -0.3658729,-0.14719 -0.5004468,-0.21027 -0.5004468,-0.40793 0,-0.18504 0.1556011,-0.29228 0.3995164,-0.29228 0.19345,0 0.3490511,0.04 0.5382957,0.18714 l 0.178731,-0.21027 c -0.19345,-0.1598 -0.3974136,-0.25022 -0.6938968,-0.25022 z m -0.1156495,1.2406 c 0.5025495,0.21027 0.6602534,0.3848 0.6602534,0.88525 0,0.50885 -0.2228881,0.78221 -0.6055828,0.78221 -0.3826946,0 -0.6076854,-0.29438 -0.6076854,-0.77801 0,-0.42264 0.1534984,-0.70651 0.5530148,-0.88945 z"
-         id="path50733" />
-    </g>
-    <g
-       aria-label="1"
-       id="text47095"
-       style="font-size:1.88079px;line-height:1.25;font-family:'Fira Code';-inkscape-font-specification:'Fira Code, Normal';fill:#f9f9f9;stroke:#333333;stroke-width:0">
-      <path
-         d="M 8.1047255,122.9994 H 7.9629429 l -0.3954482,0.24498 0.070409,0.11574 0.3047844,-0.18518 v 1.02044 H 7.6157201 v 0.13214 h 0.7667836 v -0.13214 H 8.1047255 Z"
-         id="path50754" />
-    </g>
     <circle
        style="display:inline;fill:#ff00ff;fill-opacity:1;stroke:none;stroke-width:0.502889;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path118814-0-2-3-45-79-0-9-8-2-0"
