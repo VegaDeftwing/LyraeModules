@@ -15,7 +15,8 @@
       "name": "Sulafat",
       "description": "Distortion at 15 Solar Radii",
       "tags": [
-        "Distortion","Waveshaper"
+        "Distortion",
+        "Waveshaper"
       ]
     },
     {
@@ -24,6 +25,14 @@
       "description": "",
       "tags": [
         "Utility"
+      ]
+    },
+    {
+      "slug": "Delta",
+      "name": "Delta",
+      "description": "So I heard you like ringmod",
+      "tags": [
+        "Ring modulator"
       ]
     }
   ]
