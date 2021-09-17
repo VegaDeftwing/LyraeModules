@@ -38,6 +38,14 @@ struct SmallHexKnob : app::SvgKnob {
     }
 };
 
+struct MedHexKnob : app::SvgKnob {
+    MedHexKnob() {
+        minAngle = -0.8 * M_PI;
+        maxAngle = 0.8 * M_PI;
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/MedHexKnob.svg")));
+    }
+};
+
 struct InJack : app::SvgPort {
     widget::TransformWidget* tw;
 
