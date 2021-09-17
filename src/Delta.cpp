@@ -77,39 +77,37 @@ struct Delta : Module {
 struct DeltaWidget : ModuleWidget {
 	DeltaWidget(Delta* module) {
 		setModule(module);
-		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Delta1.svg")));
+		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/delta1.svg")));
 
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
+		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH*6, + 5)));
+		addChild(createWidget<Bolt>(Vec(box.size.x - 2 * RACK_GRID_WIDTH + 5, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 27.932)), module, Delta::R1A_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 27.932)), module, Delta::R1O_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 38.092)), module, Delta::R2A_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 38.092)), module, Delta::R2O_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 48.252)), module, Delta::R3A_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 48.252)), module, Delta::R3O_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 63.413)), module, Delta::MANUALCLOCK_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 88.732)), module, Delta::RMLGATEMANUAL_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 88.732)), module, Delta::RMLGATEHOLD_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(15.24, 98.892)), module, Delta::LMRGATEMANUAL_PARAM));
-		addParam(createParamCentered<RoundBlackKnob>(mm2px(Vec(25.4, 98.892)), module, Delta::LMRGATEHOLD_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(15.24, 27.932)), module, Delta::R1A_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 27.932)), module, Delta::R1O_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(15.24, 38.092)), module, Delta::R2A_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 38.092)), module, Delta::R2O_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(15.24, 48.252)), module, Delta::R3A_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 48.252)), module, Delta::R3O_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 63.413)), module, Delta::MANUALCLOCK_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(15.24, 88.732)), module, Delta::RMLGATEMANUAL_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 88.732)), module, Delta::RMLGATEHOLD_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(15.24, 98.892)), module, Delta::LMRGATEMANUAL_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(25.4, 98.892)), module, Delta::LMRGATEHOLD_PARAM));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 7.08)), module, Delta::LEFT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(20.312, 7.08)), module, Delta::RIGHT_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 27.932)), module, Delta::R1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 38.092)), module, Delta::R2_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 48.252)), module, Delta::R3_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 63.413)), module, Delta::CLOCK_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 73.572)), module, Delta::CS1_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 73.573)), module, Delta::CS2_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(25.4, 73.573)), module, Delta::CS3_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 88.732)), module, Delta::RMLGATE_INPUT));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(5.08, 98.892)), module, Delta::LMRGATE_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(10.16, 7.08)), module, Delta::LEFT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(20.312, 7.08)), module, Delta::RIGHT_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 27.932)), module, Delta::R1_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 38.092)), module, Delta::R2_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 48.252)), module, Delta::R3_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(15.24, 63.413)), module, Delta::CLOCK_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 73.572)), module, Delta::CS1_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(15.24, 73.573)), module, Delta::CS2_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(25.4, 73.573)), module, Delta::CS3_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 88.732)), module, Delta::RMLGATE_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 98.892)), module, Delta::LMRGATE_INPUT));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(14.795, 123.205)), module, Delta::LEFT_OUTPUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(24.947, 123.205)), module, Delta::RIGHT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(14.795, 123.205)), module, Delta::LEFT_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(24.947, 123.205)), module, Delta::RIGHT_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(5.08, 63.413)), module, Delta::STAGE_LIGHT));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(20.25, 88.732)), module, Delta::LMR_LIGHT));
