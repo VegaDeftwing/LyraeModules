@@ -75,6 +75,20 @@ struct Vega : Module {
 
 	dsp::ClockDivider processDivider;
 
+	//This, along with the mess in the process divider which updates lastValue, makes
+	// it so that each knob will 'inherit' the default value of the knob above it
+	// this makes setting equal amounts of attenuation really easy.
+	struct MyParamQuantity : ParamQuantity {
+		float getDefaultValue() override {
+			Vega *vega = dynamic_cast<Vega *>(module);
+				if (paramId <= 0)
+					return 0.f;
+				if (!module)
+					return 0.f;
+			return vega->lastValue;
+		}
+	};
+
 	Vega() {
 		processDivider.setDivision(64);
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -84,20 +98,20 @@ struct Vega : Module {
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
 		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
-		configParam(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
+		configParam<MyParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
 		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam(DCURVE_PARAM, 0.f, 1.f, 1.f, "Decay Curve");
+		configParam(DCURVE_PARAM, 0.f, 1.3f, 1.f, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
-		configParam(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
+		configParam<MyParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
 		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
 		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
-		configParam(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
+		configParam<MyParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(RCURVE_PARAM, 0.2, 7.4, 1.f, "Release Curve");
 		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
@@ -131,6 +145,7 @@ struct Vega : Module {
 	int SMMode = 0;
 	int RMMode = 0;
 	bool outputAlt = false; //Use negitive output as dry
+	float lastValue = 0.f;
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -173,6 +188,7 @@ struct Vega : Module {
 			}
 		}
 		if (outputs[stage].isConnected()){
+			//TODO change mode to int, make modes: Plain wave, 
 			if (mode){
 				outputs[stage].setVoltage(10.f * output * params[GLOBALRINGOFFSET_PARAM].getValue());
 			} else {
@@ -221,8 +237,6 @@ struct Vega : Module {
 			isRunning = true;
 			stage = 0; //Attack
 		}
-
-		//TODO none of the stages have exp/lin/log control yet
 
 		if (isRunning) {
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
@@ -441,6 +455,23 @@ struct Vega : Module {
 			
 		}
 		if (processDivider.process()){
+			//TODO Set default value to the value of the value of the last mod input with a connection
+			//VCV-Vortico: Subclass ParamQuantity and override float Quantity::getDefaultValue().
+			// Call configParam<MyParamQuantity>(...) to use your subclass instead of the default class.
+
+			if (inputs[AMOD_INPUT].isConnected()){
+				lastValue = params[ARINGATT_PARAM].getValue();
+			}
+			if (inputs[DMOD_INPUT].isConnected()){
+				lastValue = params[ARINGATT_PARAM].getValue();
+			}
+			//configParam<MyParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, lastValue, "Delay Ring Attenuate");
+			if (inputs[SMOD_INPUT].isConnected()){
+				lastValue = params[ARINGATT_PARAM].getValue();
+			}
+			//configParam<MyParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, lastValue, "Sustain Ring Attenuate");
+			//configParam<MyParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, lastValue, "Release Ring Attenuate");
+
 			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
 			if (AOMDetect.process(params[AOUTMODE_PARAM].getValue())) {
 				AOutMode = !AOutMode;
