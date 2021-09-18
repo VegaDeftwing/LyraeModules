@@ -82,13 +82,13 @@ struct Vega : Module {
 		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
 		configParam(A_PARAM, 0.5, 1.5, 1.1125, "Attack Time");
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
-		configParam(ACURVE_PARAM, 0.5, 2.f, 1.f, "Attack Curve");
+		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
 		configParam(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
 		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam(DCURVE_PARAM, 0.f, 1.f, 0.f, "Decay Curve");
+		configParam(DCURVE_PARAM, 0.2, 3.f, 1.f, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
 		configParam(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
@@ -99,7 +99,7 @@ struct Vega : Module {
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
 		configParam(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
-		configParam(RCURVE_PARAM, 0.f, 1.f, 0.f, "Release Curve");
+		configParam(RCURVE_PARAM, 0.2, 3.f, 1.f, "Release Curve");
 		configParam(ANGER_PARAM, 1.f, 20.f, 10.f, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
@@ -108,6 +108,7 @@ struct Vega : Module {
 	int stage = 0;
 	bool isRunning = false;
 	float modulation = 0.f;
+	float phasor = 0.f;
 	float env = 0.f;
 	float output = 0.f;
 	dsp::SchmittTrigger gateDetect;
@@ -229,9 +230,10 @@ struct Vega : Module {
 			if (gate){
 				switch (stage){
 				case 0: // Attack
-					env += simd::pow(.000315,params[A_PARAM].getValue());
+					phasor += simd::pow(.000315,params[A_PARAM].getValue());
+					env = simd::pow(phasor,params[ACURVE_PARAM].getValue());
 
-					if (env > 1.0){
+					if (phasor > 1.0){
 						stage = 1;
 					}
 
@@ -281,10 +283,11 @@ struct Vega : Module {
 					
 					break;
 				case 1: // Decay
-					env -= simd::pow(.000315,params[D_PARAM].getValue());
+					phasor -= simd::pow(.000315,params[D_PARAM].getValue());
+					//TODO figure out the math for this curve
+					env = simd::pow(phasor,params[DCURVE_PARAM].getValue());
 
-
-					if (env <= sus + 0.001){
+					if (phasor <= sus + 0.001){
 						stage = 2;
 					}
 
@@ -331,6 +334,7 @@ struct Vega : Module {
 					break;
 				case 2: // Sustain
 					env = sus;
+					phasor = sus;
 					if (inputs[SMOD_INPUT].isConnected()){
 						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
 					} else{
@@ -349,8 +353,8 @@ struct Vega : Module {
 			}
 			if (stage == 3) //Release
 			{
-				env -= simd::pow(.000315,params[R_PARAM].getValue());
-
+				phasor -= simd::pow(.000315,params[R_PARAM].getValue());
+				env = simd::pow(phasor*(1/sus),params[RCURVE_PARAM].getValue())*sus;
 
 				displayActive(3);
 
@@ -388,8 +392,9 @@ struct Vega : Module {
 					output = modulation * env + env;
 				}
 
-				if (env <= 0){
-					env = 0;
+				if (phasor <= 0){
+					env = 0.f;
+					phasor = 0.f;
 					output = 0.f;
 					outputs[RGATE_OUTPUT].setVoltage(0.f);
 					isRunning = false;
