@@ -202,7 +202,7 @@ struct SulafatWidget : ModuleWidget {
 		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH, + 5)));
 		addChild(createWidget<Bolt>(Vec(box.size.x - 2 * RACK_GRID_WIDTH + 5, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<HexKnob>(mm2px(Vec(5.08, 69.693)), module, Sulafat::KNOB_PARAM));
+		addParam(createParamCentered<SnappingHexKnob>(mm2px(Vec(5.08, 69.693)), module, Sulafat::KNOB_PARAM));
 
 		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 12.4)), module, Sulafat::LEFT_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 22.26)), module, Sulafat::RIGHT_INPUT));

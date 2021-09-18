@@ -30,6 +30,16 @@ struct HexKnob : app::SvgKnob {
     }
 };
 
+struct SnappingHexKnob : app::SvgKnob {
+    SnappingHexKnob() {
+        minAngle = -0.8 * M_PI;
+        maxAngle = 0.8 * M_PI;
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/HexKnob.svg")));
+        snap = true;
+        snapValue = 1;
+    }
+};
+
 struct SmallHexKnob : app::SvgKnob {
     SmallHexKnob() {
         minAngle = -0.8 * M_PI;
