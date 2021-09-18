@@ -88,7 +88,7 @@ struct Vega : Module {
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
 		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam(DCURVE_PARAM, 0.2, 3.f, 1.f, "Decay Curve");
+		configParam(DCURVE_PARAM, 0.f, 1.f, 1.f, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
 		configParam(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
@@ -99,7 +99,7 @@ struct Vega : Module {
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
 		configParam(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
-		configParam(RCURVE_PARAM, 0.2, 3.f, 1.f, "Release Curve");
+		configParam(RCURVE_PARAM, 0.2, 7.4, 1.f, "Release Curve");
 		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
@@ -225,7 +225,7 @@ struct Vega : Module {
 		//TODO none of the stages have exp/lin/log control yet
 
 		if (isRunning) {
-			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*4)+1;
+			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
 			float sus = params[S_PARAM].getValue();
 			if (gate){
 				switch (stage){
@@ -285,9 +285,17 @@ struct Vega : Module {
 				case 1: // Decay
 					phasor -= simd::pow(.000315,params[D_PARAM].getValue());
 					//TODO figure out the math for this curve
-					env = simd::pow(phasor,params[DCURVE_PARAM].getValue());
+					//env = simd::pow(phasor,params[DCURVE_PARAM].getValue());
 
-					if (phasor <= sus + 0.001){
+					//using bezier curves (ish) because nothing else wanted to work
+					//p0 is starting point, p2 is the ending point, p1 is the control point
+					//t is the phasor from 0 to 1
+					// p1+(1-t)^2*(p0-p1)+t^2*(p2-p1)
+					//TODO this works BUT the DCURVE_PARAM needs to be scaled such that the minimum value is the sustain level.
+					// there's also the problem of chaning the sustain level changes the slope. But it's closer.
+					env = params[DCURVE_PARAM].getValue()+simd::pow((1-phasor),2)*(sus-params[DCURVE_PARAM].getValue())+simd::pow(phasor,2)*(1-params[DCURVE_PARAM].getValue());
+
+					if (phasor <= 0){
 						stage = 2;
 					}
 
