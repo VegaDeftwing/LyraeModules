@@ -78,7 +78,7 @@ struct Vega : Module {
 	//This, along with the mess in the process divider which updates lastValue, makes
 	// it so that each knob will 'inherit' the default value of the knob above it
 	// this makes setting equal amounts of attenuation really easy.
-	struct MyParamQuantity : ParamQuantity {
+	struct ChainParamQuantity : ParamQuantity {
 		float getDefaultValue() override {
 			Vega *vega = dynamic_cast<Vega *>(module);
 				if (paramId <= 0)
@@ -86,6 +86,19 @@ struct Vega : Module {
 				if (!module)
 					return 0.f;
 			return vega->lastValue;
+		}
+	};
+
+	//This makes the decay curve default value whatever it needs to be to go back
+	//to being linear while still leaving the full range
+	struct BezierParamQuantity : ParamQuantity {
+		float getDefaultValue() override {
+			Vega *vega = dynamic_cast<Vega *>(module);
+				if (paramId <= 0)
+					return 0.f;
+				if (!module)
+					return 0.f;
+			return((1 + vega->sus)/2);
 		}
 	};
 
@@ -98,20 +111,20 @@ struct Vega : Module {
 		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
 		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
 		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
-		configParam<MyParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
+		configParam<ChainParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
 		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
 		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
 		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam(DCURVE_PARAM, 0.f, 1.3f, 1.f, "Decay Curve");
+		configParam<BezierParamQuantity>(DCURVE_PARAM, 0.f, 1.3f, 0.75, "Decay Curve");
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
-		configParam<MyParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
+		configParam<ChainParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
 		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
 		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
 		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
-		configParam<MyParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
+		configParam<ChainParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(RCURVE_PARAM, 0.2, 7.4, 1.f, "Release Curve");
 		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
@@ -146,6 +159,7 @@ struct Vega : Module {
 	int RMMode = 0;
 	bool outputAlt = false; //Use negitive output as dry
 	float lastValue = 0.f;
+	float sus = 0.75;
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -240,7 +254,7 @@ struct Vega : Module {
 
 		if (isRunning) {
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
-			float sus = params[S_PARAM].getValue();
+			sus = params[S_PARAM].getValue();
 			if (gate){
 				switch (stage){
 				case 0: // Attack
@@ -255,6 +269,8 @@ struct Vega : Module {
 					// method were the same on each stage, but if one stage is RM and the other Add, this probably fails
 					// to make smooth transitions due to RM and ADD leading to different signal amplitudes. A quick test
 					// makes it seem like this isn't a problem, but I'm not sure.
+
+					//TODO Normal modulation inputs going down
 
 					if (inputs[AMOD_INPUT].isConnected()){
 						modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
