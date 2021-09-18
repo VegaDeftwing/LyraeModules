@@ -100,7 +100,7 @@ struct Vega : Module {
 		configParam(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
 		configParam(RCURVE_PARAM, 0.2, 3.f, 1.f, "Release Curve");
-		configParam(ANGER_PARAM, 1.f, 20.f, 10.f, "Transistion Time Control");
+		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 	}
@@ -225,7 +225,7 @@ struct Vega : Module {
 		//TODO none of the stages have exp/lin/log control yet
 
 		if (isRunning) {
-			float anger = params[ANGER_PARAM].getValue();
+			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*4)+1;
 			float sus = params[S_PARAM].getValue();
 			if (gate){
 				switch (stage){
