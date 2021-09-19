@@ -6,29 +6,27 @@ struct Vega : Module {
 		AFORCEADV_PARAM,
 		DFORCEADV_PARAM,
 		SFORCEADV_PARAM,
-
 		AOUTMODE_PARAM,
 		DOUTMODE_PARAM,
 		SOUTMODE_PARAM,
 		ROUTMODE_PARAM,
-
-		A_PARAM,
 		ARINGATT_PARAM,
-		ARINGMODE_PARAM,
-		ACURVE_PARAM,
-		GLOBALRINGATT_PARAM,
-		GLOBALRINGOFFSET_PARAM,
-		D_PARAM,
 		DRINGATT_PARAM,
-		DRINGMODE_PARAM,
-		DCURVE_PARAM,
 		SRINGATT_PARAM,
-		SRINGMODE_PARAM,
+		RRINGATT_PARAM,
+		A_PARAM,
+		D_PARAM,
 		S_PARAM,
 		R_PARAM,
-		RRINGATT_PARAM,
+		ARINGMODE_PARAM,
+		DRINGMODE_PARAM,
+		SRINGMODE_PARAM,
 		RRINGMODE_PARAM,
+		ACURVE_PARAM,
+		DCURVE_PARAM,
 		RCURVE_PARAM,
+		GLOBALRINGATT_PARAM,
+		GLOBALRINGOFFSET_PARAM,
 		ANGER_PARAM,
 		NUM_PARAMS
 	};
@@ -37,7 +35,6 @@ struct Vega : Module {
 		AADV_INPUT,
 		DADV_INPUT,
 		SADV_INPUT,
-
 		AMOD_INPUT,
 		DMOD_INPUT,
 		SMOD_INPUT,
@@ -52,13 +49,12 @@ struct Vega : Module {
 		DOUT_OUTPUT,
 		SOUT_OUTPUT,
 		ROUT_OUTPUT,
-
 		AGATE_OUTPUT,
 		DGATE_OUTPUT,
 		SGATE_OUTPUT,
 		RGATE_OUTPUT,
-		MAINOUTM_OUTPUT,
 		MAINOUTP_OUTPUT,
+		MAINOUTM_OUTPUT,
 		NUM_OUTPUTS
 	};
 	enum LightIds {
@@ -80,12 +76,11 @@ struct Vega : Module {
 	// this makes setting equal amounts of attenuation really easy.
 	struct ChainParamQuantity : ParamQuantity {
 		float getDefaultValue() override {
-			Vega *vega = dynamic_cast<Vega *>(module);
 				if (paramId <= 0)
 					return 0.f;
 				if (!module)
 					return 0.f;
-			return vega->lastValue;
+			return module->params[paramId - 1].getValue();
 		}
 	};
 
@@ -105,39 +100,55 @@ struct Vega : Module {
 	Vega() {
 		processDivider.setDivision(64);
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(ARINGATT_PARAM, 0.f, 0.2, 0.f, "Attack Ring Attenuate");
-		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
-		configParam(A_PARAM, 0.5, 1.5, 1.1125, "Attack Time");
-		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
-		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
-		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
+		configParam<ChainParamQuantity>(ARINGATT_PARAM, 0.f, 0.2, 0.f, "Attack Ring Attenuate");
 		configParam<ChainParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
-		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
-		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
-		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam<BezierParamQuantity>(DCURVE_PARAM, 0.f, 1.3f, 0.75, "Decay Curve");
-		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
 		configParam<ChainParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
-		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
-		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
-		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
-		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
-		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
-		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
 		configParam<ChainParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
+		//Basic ADSR controls (time,time,level,time)
+		configParam(A_PARAM, 0.5, 1.5, 1.1125, "Attack Time");
+		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
+		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
+		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
+		//Output mode buttons
+		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
+		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
+		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
+		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		//Modulation mode buttons
+		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
+		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
+		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
 		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		//A,D,R curve parameters - Decay get's the default set to be linear based on the value of S_PARAM
+		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
+		configParam<BezierParamQuantity>(DCURVE_PARAM, 0.f, 1.3f, 0.75, "Decay Curve");
 		configParam(RCURVE_PARAM, 0.2, 7.4, 1.f, "Release Curve");
+		//Force advance buttons
+		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
+		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
+		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
+		//Global controls - Anger controls X-FADE time. Offset acts as attenuator if no ring input
 		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 	}
 
+	//Current stage 0=A 1=D 2=S 3=R
 	int stage = 0;
+	//If the envelope is still running
 	bool isRunning = false;
-	float modulation = 0.f;
+	//The linear envelope, generated piecewise
 	float phasor = 0.f;
+	//The envelope after curve has been applied
 	float env = 0.f;
+	//The value that will be math'd onto the envelope to get the output 
+	float modulation = 0.f;
+	//The modulation gets XFaded between stages depending on the anger knob
+	float modulationSource = 0.f;
+	float modulationDest = 0.f;
+	//The envelope with all the modulation
 	float output = 0.f;
+	//Primary Gate Trigger
 	dsp::SchmittTrigger gateDetect;
 	//Output Mode Triggers
 	dsp::SchmittTrigger AOMDetect;
@@ -149,16 +160,19 @@ struct Vega : Module {
 	dsp::SchmittTrigger DMDetect;
 	dsp::SchmittTrigger SMDetect;
 	dsp::SchmittTrigger RMDetect;
-	bool AOutMode = false;
-	bool DOutMode = false;
-	bool SOutMode = true;
-	bool ROutMode = false;
+	//Output modes, 0=plain env (env), 1=env w/ modulation (output), 2=env-sus (Decay only)
+	int AOutMode = 0;
+	int DOutMode = 0;
+	int SOutMode = 0;
+	int ROutMode = 0;
+	//Modulation mode, 0=ring+env, 1=add, 2=add w/ fade, 3=ring (TODO this might be the same as add)
 	int AMMode = 0;
 	int DMMode = 0;
 	int SMMode = 0;
 	int RMMode = 0;
+	//Alt mode in R-Click menue to switch the negitive output from -output to env
 	bool outputAlt = false; //Use negitive output as dry
-	float lastValue = 0.f;
+	//This holds the sustain level as it's used a lot, running getValue() a lot is inefficient and hard to read
 	float sus = 0.75;
 
 	void displayActive(int lstage){
@@ -179,7 +193,7 @@ struct Vega : Module {
 				if (lstage == 0){
 					// if the attack stage is skipped the envelope needs to be set high
 					// so the decay stage has something to work with
-					env = 1;
+					phasor = 1;
 				}
 			}
 		}
@@ -188,13 +202,13 @@ struct Vega : Module {
 			if (lstage == 0){
 				// if the attack stage is skipped the envelope needs to be set high
 				// so the decay stage has something to work with
-				env = 1;
+				phasor = 1;
 			}
 		}
 		
 	}
 
-	void perStageOutput(int stage, bool mode){
+	void perStageOutput(int stage, int mode){
 		//accessing output and env as globals. This is probably frowed upon but oh well.
 		if (stage != 0){ //the attack stage dosen't need to turn off the release stage's output
 			if (outputs[stage-1].isConnected()){
@@ -203,11 +217,14 @@ struct Vega : Module {
 		}
 		if (outputs[stage].isConnected()){
 			//TODO change mode to int, make modes: Plain wave, 
-			if (mode){
-				outputs[stage].setVoltage(10.f * output * params[GLOBALRINGOFFSET_PARAM].getValue());
-			} else {
+			if (mode == 0){ //LED OFF output mode, basic env
 				outputs[stage].setVoltage(10.f * env);
+			} else if(mode == 1) { //BLUE LED output mode, env w/ modulation
+				outputs[stage].setVoltage(10.f * output * params[GLOBALRINGOFFSET_PARAM].getValue());
+			} else { //GREEN LED output mode, env - DC, only available on Decay
+				outputs[stage].setVoltage(10.f * (env - sus));
 			}
+			
 		}	
 	}
 
@@ -229,13 +246,6 @@ struct Vega : Module {
 				lights[offset + 1].setBrightness(0.f);
 				lights[offset + 2].setBrightness(1.f);
 				break;
-
-			case 3:
-				lights[offset + 0].setBrightness(1.f);
-				lights[offset + 1].setBrightness(1.f);
-				lights[offset + 2].setBrightness(0.f);
-				break;
-			
 			default:
 				lights[offset + 0].setBrightness(0.f);
 				lights[offset + 1].setBrightness(0.f);
@@ -255,6 +265,22 @@ struct Vega : Module {
 		if (isRunning) {
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
 			sus = params[S_PARAM].getValue();
+
+			// Modulation destination is dependent on whatever input is being normalled to the sustain stage
+			// This is the signal that is used to crossfade the decay->sustain and the sustain->release
+			// it is **not** used for attack->decay, as that is a special case and so handled in the
+			// attack stage's logic
+
+			if (inputs[SMOD_INPUT].isConnected()){
+				modulationDest = inputs[SMOD_INPUT].getVoltage();
+			} else if (inputs[DMOD_INPUT].isConnected()){
+				modulationDest = inputs[DMOD_INPUT].getVoltage();
+			} else if (inputs[AMOD_INPUT].isConnected()){
+				modulationDest = inputs[AMOD_INPUT].getVoltage();
+			} else{
+				modulationDest = 0;
+			}
+
 			if (gate){
 				switch (stage){
 				case 0: // Attack
@@ -265,17 +291,24 @@ struct Vega : Module {
 						stage = 1;
 					}
 
-					//TODO Right now this is crossfading the modulation signal input. This would be okay if the modulation
+					// This is crossfading the modulation signal input. This would be okay if the modulation
 					// method were the same on each stage, but if one stage is RM and the other Add, this probably fails
 					// to make smooth transitions due to RM and ADD leading to different signal amplitudes. A quick test
-					// makes it seem like this isn't a problem, but I'm not sure.
-
-					//TODO Normal modulation inputs going down
+					// makes it seem like this isn't a problem, but I'm not sure. and franky I don't think it's 100%
+					// necessary that it does work like that, so this is going to stay as is
 
 					if (inputs[AMOD_INPUT].isConnected()){
-						modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
-													inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
-													(simd::fmax(0,anger*env-anger+1)));
+						if (inputs[DMOD_INPUT].isConnected()){ //Necessary for normalling
+							modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
+														inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+														(simd::fmax(0,anger*env-anger+1)));
+						} else{
+							modulation = simd::crossfade(inputs[AMOD_INPUT].getVoltage() * params[ARINGATT_PARAM].getValue(),
+														inputs[AMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
+														(simd::fmax(0,anger*env-anger+1)));
+						}
+						
+						
 						switch (AMMode){
 						case 0: // Ring
 							output = modulation * env + env;
@@ -284,17 +317,11 @@ struct Vega : Module {
 							output = modulation + env;
 							break;
 						case 3: // Self-Env Addition
-							//TODO this might not be working, or be working to well? - it seems to be the same as basic ring
-							if (env <= 0.1){ //first 10% of Attack stage
+							if (env <= 0.2){ //first 20% of Attack stage
 								output = (modulation * env * 10) + env;
 							} else{
 								output = modulation + env;
 							}
-							break;
-						case 4: // Non offset Ring
-							//This is only very sightly different from additon, but creates smoother transitions at start of env
-							// Might want to make this the Mode 3?
-							output = modulation * env;
 							break;
 						default:
 							output = modulation * env + env;
@@ -314,54 +341,51 @@ struct Vega : Module {
 					break;
 				case 1: // Decay
 					phasor -= simd::pow(.000315,params[D_PARAM].getValue());
-					//TODO figure out the math for this curve
-					//env = simd::pow(phasor,params[DCURVE_PARAM].getValue());
-
 					//using bezier curves (ish) because nothing else wanted to work
 					//p0 is starting point, p2 is the ending point, p1 is the control point
 					//t is the phasor from 0 to 1
-					// p1+(1-t)^2*(p0-p1)+t^2*(p2-p1)
-					//TODO this works BUT the DCURVE_PARAM needs to be scaled such that the minimum value is the sustain level.
-					// there's also the problem of chaning the sustain level changes the slope. But it's closer.
-					env = params[DCURVE_PARAM].getValue()+simd::pow((1-phasor),2)*(sus-params[DCURVE_PARAM].getValue())+simd::pow(phasor,2)*(1-params[DCURVE_PARAM].getValue());
+					//p1+(1-t)^2*(p0-p1)+t^2*(p2-p1)
+					env = params[DCURVE_PARAM].getValue() //p1
+						  +simd::pow((1-phasor),2) //+(1-t)^2
+						  *(sus-params[DCURVE_PARAM].getValue()) //*(p0-p1)
+						  +simd::pow(phasor,2) //+t^2
+						  *(1-params[DCURVE_PARAM].getValue()); //*(p2-p1)
 
 					if (phasor <= 0){
 						stage = 2;
 					}
 
+					//Normal modulation inputs going down
 					if (inputs[DMOD_INPUT].isConnected()){
-						//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
-						modulation = simd::crossfade(inputs[DMOD_INPUT].getVoltage() * params[DRINGATT_PARAM].getValue(),
-													inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-													(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
-						switch (DMMode){
-						case 0: // Ring
-							output = modulation * env + env;
-							break;
-						case 1: // Addition
-							output = modulation + env;
-							break;
-						case 3: // Self-Env Addition
-							//TODO this doesn't seem to be working
-							if ((-env + 1 * (1/sus)) <= 0.1){ //first 10% of decay stage
-								output = (modulation * env * 10) + env;
-							} else{
-								output = modulation + env;
-							}
-							break;
-						case 4: // Non offset Ring
-							//TODO this might be the same as basic addition?
-							output = modulation * env;
-							break;
-						default:
-							output = modulation * env + env;
-							break;
-						}
+						modulationSource = inputs[DMOD_INPUT].getVoltage();
+					} else if (inputs[AMOD_INPUT].isConnected()){
+						modulationSource = inputs[AMOD_INPUT].getVoltage();
 					} else{
-						modulation = simd::crossfade(0.f,
-													inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-													(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+						modulationSource = 0;
+					}
+						
+						
+					//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
+					modulation = simd::crossfade(modulationSource * params[DRINGATT_PARAM].getValue(),
+												 modulationDest * params[SRINGATT_PARAM].getValue(),
+												 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+					switch (DMMode){
+					case 0: // Ring
 						output = modulation * env + env;
+						break;
+					case 1: // Addition
+						output = modulation + env;
+						break;
+					case 3: // Self-Env Addition
+						if ((-env + 1 * (1/sus)) <= 0.2){ //first 20% of decay stage
+							output = (modulation * env * 10) + env;
+						} else{
+							output = modulation + env;
+						}
+						break;
+					default:
+						output = modulation * env + env;
+						break;
 					}
 
 
@@ -373,11 +397,35 @@ struct Vega : Module {
 				case 2: // Sustain
 					env = sus;
 					phasor = sus;
+
+					//Normal modulation inputs going down, if none connected 0-out the modulation source
 					if (inputs[SMOD_INPUT].isConnected()){
-						output = (inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue()) * env + env;
+						modulationSource = inputs[SMOD_INPUT].getVoltage();
+					} else if (inputs[DMOD_INPUT].isConnected()){
+						modulationSource = inputs[DMOD_INPUT].getVoltage();
+					} else if (inputs[AMOD_INPUT].isConnected()){
+						modulationSource = inputs[AMOD_INPUT].getVoltage();
 					} else{
-						output = env;
+						modulationSource = 0;
 					}
+						
+					//No XFade on the sustain stage, as it's length is unknown
+					//This is resolved by XFading on on the decay stage and the Release stage
+					modulation = modulationSource * params[SRINGATT_PARAM].getValue();
+
+					//Sustain stage has less modes because it's constant
+					switch (SMMode){
+					case 0: // Ring
+						output = modulation * env + env;
+						break;
+					case 1: // Addition
+						output = modulation + env;
+						break;
+					default:
+						output = modulation * env + env;
+						break;
+					}
+
 					displayActive(2);
 					perStageOutput(2,SOutMode);
 					forceAdvance(2); //checks if the force advance is true internally
@@ -386,48 +434,49 @@ struct Vega : Module {
 				default:
 					break;
 				}
-			} else{
-				stage = 3; //Release
+			} else{ //Gate released,
+				stage = 3; //change to Release stage
 			}
-			if (stage == 3) //Release
-			{
+			if (stage == 3){ //Release (this check isn't really necessary as the end of gate implies this anyway)
 				phasor -= simd::pow(.000315,params[R_PARAM].getValue());
 				env = simd::pow(phasor*(1/sus),params[RCURVE_PARAM].getValue())*sus;
 
 				displayActive(3);
 
+				//Normal modulation inputs going down
 				if (inputs[RMOD_INPUT].isConnected()){
-					modulation = simd::crossfade(inputs[RMOD_INPUT].getVoltage() * params[RRINGATT_PARAM].getValue(),
-												inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-												(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
-					switch (RMMode){
-					case 0: // Ring
-						output = modulation * env + env;
-						break;
-					case 1: // Addition
-						output = modulation + env;
-						break;
-					case 3: // Self-Env Addition
-						//TODO This doesn't seem to be working
-						if ((-env + sus * (1/sus)) <= 0.1){ //first 10% of release stage
-							output = (modulation * env * 10) + env;
-						} else{
-							output = modulation + env;
-						}
-						break;
-					case 4: // Non offset Ring
-						//TODO This might be the same as basic addition
-						output = modulation * env;
-						break;
-					default:
-						output = modulation * env + env;
-						break;
-					}
+					modulationSource = inputs[RMOD_INPUT].getVoltage();
+				} else if (inputs[SMOD_INPUT].isConnected()){
+					modulationSource = inputs[SMOD_INPUT].getVoltage();
+				} else if (inputs[DMOD_INPUT].isConnected()){
+					modulationSource = inputs[DMOD_INPUT].getVoltage();
+				} else if (inputs[AMOD_INPUT].isConnected()){
+					modulationSource = inputs[AMOD_INPUT].getVoltage();
 				} else{
-					modulation = simd::crossfade(0.f,
-												inputs[SMOD_INPUT].getVoltage() * params[SRINGATT_PARAM].getValue(),
-												(simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+					modulationSource = 0;
+				}						
+						
+				//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
+				modulation = simd::crossfade(modulationSource * params[RRINGATT_PARAM].getValue(),
+											 modulationDest * params[SRINGATT_PARAM].getValue(),
+											 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+				switch (DMMode){
+				case 0: // Ring
 					output = modulation * env + env;
+					break;
+				case 1: // Addition
+					output = modulation + env;
+					break;
+				case 3: // Self-Env Addition
+					if ((-env + 1 * (1/sus)) <= 0.2){ //first 20% of release stage
+						output = (modulation * env * 10) + env;
+					} else{
+						output = modulation + env;
+					}
+					break;
+				default:
+					output = modulation * env + env;
+					break;
 				}
 
 				if (phasor <= 0){
@@ -439,7 +488,7 @@ struct Vega : Module {
 				}
 
 				perStageOutput(3,ROutMode);
-			}
+			} //End release stage
 
 			//Output
 			if (inputs[GLOBALRING_INPUT].isConnected()){
@@ -454,8 +503,7 @@ struct Vega : Module {
 						outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
 					}
 				}
-			} else{
-				// If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
+			} else{ // If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
 				if (outputs[MAINOUTP_OUTPUT].isConnected()){
 					outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
 				}
@@ -469,57 +517,56 @@ struct Vega : Module {
 				}
 			}
 			
-		}
+		} //END isrunning
+
 		if (processDivider.process()){
-			//TODO Set default value to the value of the value of the last mod input with a connection
-			//VCV-Vortico: Subclass ParamQuantity and override float Quantity::getDefaultValue().
-			// Call configParam<MyParamQuantity>(...) to use your subclass instead of the default class.
-
-			if (inputs[AMOD_INPUT].isConnected()){
-				lastValue = params[ARINGATT_PARAM].getValue();
-			}
-			if (inputs[DMOD_INPUT].isConnected()){
-				lastValue = params[ARINGATT_PARAM].getValue();
-			}
-			//configParam<MyParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, lastValue, "Delay Ring Attenuate");
-			if (inputs[SMOD_INPUT].isConnected()){
-				lastValue = params[ARINGATT_PARAM].getValue();
-			}
-			//configParam<MyParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, lastValue, "Sustain Ring Attenuate");
-			//configParam<MyParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, lastValue, "Release Ring Attenuate");
-
 			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
 			if (AOMDetect.process(params[AOUTMODE_PARAM].getValue())) {
-				AOutMode = !AOutMode;
+				AOutMode = (AOutMode + 1)%2;
 				lights[AGATE_LIGHT + 2].setBrightness(AOutMode ? 1.f : 0.f);
 			}
 			if (DOMDetect.process(params[DOUTMODE_PARAM].getValue())) {
-				DOutMode = !DOutMode;
-				lights[DGATE_LIGHT + 2].setBrightness(DOutMode ? 1.f : 0.f);
+				DOutMode = (DOutMode + 1)%3;
+				switch (DOutMode){
+				case 0:
+					lights[DGATE_LIGHT + 1].setBrightness(0.f);
+					lights[DGATE_LIGHT + 2].setBrightness(0.f);
+					break;
+				case 1:
+					lights[DGATE_LIGHT + 1].setBrightness(0.f);
+					lights[DGATE_LIGHT + 2].setBrightness(1.f);
+					break;
+				case 2:
+					lights[DGATE_LIGHT + 1].setBrightness(1.f);
+					lights[DGATE_LIGHT + 2].setBrightness(0.f);
+					break;
+				default:
+					break;
+				}
 			}
 			if (SOMDetect.process(params[SOUTMODE_PARAM].getValue())) {
-				SOutMode = !SOutMode;
+				SOutMode = (SOutMode + 1)%2;
 				lights[SGATE_LIGHT + 2].setBrightness(SOutMode ? 1.f : 0.f);
 			}
 			if (ROMDetect.process(params[ROUTMODE_PARAM].getValue())) {
-				ROutMode = !ROutMode;
+				ROutMode = (ROutMode + 1)%2;
 				lights[RGATE_LIGHT + 2].setBrightness(ROutMode ? 1.f : 0.f);
 			}
 			// toggle states for Modulation Modes, update mode LED respectively
 			if (AMDetect.process(params[ARINGMODE_PARAM].getValue())) {
-				AMMode = (AMMode + 1)%4;
+				AMMode = (AMMode + 1)%3;
 				setModeLight(0,AMMode);
 			}
 			if (DMDetect.process(params[DRINGMODE_PARAM].getValue())) {
-				DMMode = (DMMode + 1)%4;
+				DMMode = (DMMode + 1)%3;
 				setModeLight(1,DMMode);
 			}
 			if (SMDetect.process(params[SRINGMODE_PARAM].getValue())) {
-				SMMode = (SMMode + 1)%4;
+				SMMode = (SMMode + 1)%2;
 				setModeLight(2,SMMode);
 			}
 			if (RMDetect.process(params[RRINGMODE_PARAM].getValue())) {
-				RMMode = (RMMode + 1)%4;
+				RMMode = (RMMode + 1)%3;
 				setModeLight(3,RMMode);
 			}
 		}
@@ -534,7 +581,7 @@ struct Vega : Module {
 		//Set the outputmode LEDs to inital value at startup
 		lights[AGATE_LIGHT + 2].setBrightness(0.f);
 		lights[DGATE_LIGHT + 2].setBrightness(0.f);
-		lights[SGATE_LIGHT + 2].setBrightness(1.f);
+		lights[SGATE_LIGHT + 2].setBrightness(0.f);
 		lights[RGATE_LIGHT + 2].setBrightness(0.f);
 	}
 };
@@ -626,6 +673,12 @@ struct VegaWidget : ModuleWidget {
 		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
         altOutput->vega = vega;
 		menu->addChild(altOutput);
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "OUTPUT MODES:\nOFF: Basic Envelope\nBLUE: With Modulation\nGREEN: Basic Env - DC (Decay Only)"));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 	}
 };
 
