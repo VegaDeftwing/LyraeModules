@@ -451,12 +451,15 @@ struct Vega : Module {
 				default:
 					break;
 				}
-			} else{ //Gate released,
+			} else if (stage!=3){ //if the sustain stage never happened, due to a long decay
+				phasor = sus;
+				stage = 3;
+			} else { //Gate released, phasor == sus already
 				stage = 3; //change to Release stage
 			}
 			if (stage == 3){ //Release (this check isn't really necessary as the end of gate implies this anyway)
 				phasor -= simd::pow(.000315,params[R_PARAM].getValue());
-				env = simd::pow(phasor*(1/sus),params[RCURVE_PARAM].getValue())*sus;
+				env = simd::pow(phasor*(1/(sus+.00001)),params[RCURVE_PARAM].getValue())*sus;
 
 				displayActive(3);
 
@@ -508,6 +511,7 @@ struct Vega : Module {
 			} //End release stage
 
 			//Output
+			//TODO S&H is done, but this needs smoothing still
 			if (sampleSquare >= .499f){
 				if (inputs[GLOBALRING_INPUT].isConnected()){
 					if (outputs[MAINOUTP_OUTPUT].isConnected()){
@@ -654,6 +658,12 @@ struct VegaWidget : ModuleWidget {
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 86.839)), module, Vega::RMOD_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(8.332, 110.027)), module, Vega::GATE_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(20.23, 110.027)), module, Vega::GLOBALRING_INPUT));
+		//TODO add input for s&h rate control
+		//TODO Move inputs around in general
+		// Gate Ring S&H anger
+		//      att  off
+		//      off  sth
+		// Maybe add slight curved cuts into panel to divide the sections
 
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 14.839)), module, Vega::AOUT_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 22.839)), module, Vega::AGATE_OUTPUT));
