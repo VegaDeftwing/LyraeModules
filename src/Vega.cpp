@@ -28,6 +28,8 @@ struct Vega : Module {
 		GLOBALRINGATT_PARAM,
 		GLOBALRINGOFFSET_PARAM,
 		ANGER_PARAM,
+		SMOOTH_PARAM,
+		SANDH_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -131,6 +133,9 @@ struct Vega : Module {
 		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
+		//S&H Section
+		configParam(SANDH_PARAM, 0.f, 1.f, 1.f, "S&H Frequency");
+		configParam(SMOOTH_PARAM, 0.f, 1.f, 1.f, "Slew after S&H");
 	}
 
 	//Current stage 0=A 1=D 2=S 3=R
@@ -165,7 +170,7 @@ struct Vega : Module {
 	int DOutMode = 0;
 	int SOutMode = 0;
 	int ROutMode = 0;
-	//Modulation mode, 0=ring+env, 1=add, 2=add w/ fade, 3=ring (TODO this might be the same as add)
+	//Modulation mode, 0=ring+env, 1=add, 2=add w/ fade, 3=ring
 	int AMMode = 0;
 	int DMMode = 0;
 	int SMMode = 0;
@@ -215,8 +220,7 @@ struct Vega : Module {
 				outputs[stage-1].setVoltage(0.f);
 			}
 		}
-		if (outputs[stage].isConnected()){
-			//TODO change mode to int, make modes: Plain wave, 
+		if (outputs[stage].isConnected()){ 
 			if (mode == 0){ //LED OFF output mode, basic env
 				outputs[stage].setVoltage(10.f * env);
 			} else if(mode == 1) { //BLUE LED output mode, env w/ modulation
@@ -620,6 +624,8 @@ struct VegaWidget : ModuleWidget {
 		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODE_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 96.118)), module, Vega::RCURVE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
+		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::SMOOTH_PARAM));
+		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(37.0,122.0)), module, Vega::SANDH_PARAM));
 
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 14.839)), module, Vega::AMOD_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 22.839)), module, Vega::AADV_INPUT));
@@ -672,6 +678,7 @@ struct VegaWidget : ModuleWidget {
 		menu->addChild(new MenuEntry);
 		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
         altOutput->vega = vega;
+		//TODO option to make Release gate EOR
 		menu->addChild(altOutput);
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
