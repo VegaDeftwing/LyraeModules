@@ -134,7 +134,7 @@ struct Vega : Module {
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 		//S&H Section
-		configParam(SANDH_PARAM, 1.f, 40.f, 1.f, "S&H Frequency");
+		configParam(SANDH_PARAM, 40.f, 1.f, 1.f, "S&H Frequency");
 		configParam(SMOOTH_PARAM, .4f, .499f, .499f, "Slew after S&H");
 	}
 
@@ -293,7 +293,7 @@ struct Vega : Module {
 				sampleSquare = -.5f;
 			}
 
-			if (params[SANDH_PARAM].getValue() == 1){
+			if (params[SANDH_PARAM].getValue() == 40.f){
 				sampleSquare = 1; //always update output
 			}
 			
