@@ -134,8 +134,8 @@ struct Vega : Module {
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 		//S&H Section
-		configParam(SANDH_PARAM, 0.f, 1.f, 1.f, "S&H Frequency");
-		configParam(SMOOTH_PARAM, 0.f, 1.f, 1.f, "Slew after S&H");
+		configParam(SANDH_PARAM, 1.f, 40.f, 1.f, "S&H Frequency");
+		configParam(SMOOTH_PARAM, .4f, .499f, .499f, "Slew after S&H");
 	}
 
 	//Current stage 0=A 1=D 2=S 3=R
@@ -179,6 +179,8 @@ struct Vega : Module {
 	bool outputAlt = false; //Use negitive output as dry
 	//This holds the sustain level as it's used a lot, running getValue() a lot is inefficient and hard to read
 	float sus = 0.75;
+	//Oscilator for S&H
+	float sampleSquare = 0.f;
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -284,6 +286,17 @@ struct Vega : Module {
 			} else{
 				modulationDest = 0;
 			}
+
+			//Generate S&H osc
+			sampleSquare += args.sampleTime * params[SANDH_PARAM].getValue();
+			if (sampleSquare >= .5f){
+				sampleSquare = -.5f;
+			}
+
+			if (params[SANDH_PARAM].getValue() == 1){
+				sampleSquare = 1; //always update output
+			}
+			
 
 			if (gate){
 				switch (stage){
@@ -495,33 +508,38 @@ struct Vega : Module {
 			} //End release stage
 
 			//Output
-			if (inputs[GLOBALRING_INPUT].isConnected()){
-				if (outputs[MAINOUTP_OUTPUT].isConnected()){
-					outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
-				}
-				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					if (outputAlt){
-						//Right Click menu option
-						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
-					} else{
-						outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+			if (sampleSquare >= .499f){
+				if (inputs[GLOBALRING_INPUT].isConnected()){
+					if (outputs[MAINOUTP_OUTPUT].isConnected()){
+						outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
 					}
-				}
-			} else{ // If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
-				if (outputs[MAINOUTP_OUTPUT].isConnected()){
-					outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
-				}
-				if (outputs[MAINOUTM_OUTPUT].isConnected()){
-					if (outputAlt){
-						//Right click menu option
-						outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
-					} else{
-						outputs[MAINOUTM_OUTPUT].setVoltage(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+					if (outputs[MAINOUTM_OUTPUT].isConnected()){
+						if (outputAlt){
+							//Right Click menu option
+							outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+						} else{
+							outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+						}
+					}
+				} else{ // If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
+					if (outputs[MAINOUTP_OUTPUT].isConnected()){
+						outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+					}
+					if (outputs[MAINOUTM_OUTPUT].isConnected()){
+						if (outputAlt){
+							//Right click menu option
+							outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+						} else{
+							outputs[MAINOUTM_OUTPUT].setVoltage(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+						}
 					}
 				}
 			}
-			
-		} //END isrunning
+		} else{  //END isrunning
+			//Necessary as modulation/S&H may leave it high
+			outputs[MAINOUTM_OUTPUT].setVoltage(0.f);
+			outputs[MAINOUTP_OUTPUT].setVoltage(0.f);
+		}
 
 		if (processDivider.process()){
 			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
