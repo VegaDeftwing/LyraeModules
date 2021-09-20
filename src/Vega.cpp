@@ -102,10 +102,10 @@ struct Vega : Module {
 	Vega() {
 		processDivider.setDivision(64);
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam<ChainParamQuantity>(ARINGATT_PARAM, 0.f, 0.2, 0.f, "Attack Ring Attenuate");
-		configParam<ChainParamQuantity>(DRINGATT_PARAM, 0.f, 0.2, 0.f, "Decay Ring Attenuate");
-		configParam<ChainParamQuantity>(SRINGATT_PARAM, 0.f, 0.2, 0.f, "Sustain Ring Attenuate");
-		configParam<ChainParamQuantity>(RRINGATT_PARAM, 0.f, 0.2, 0.f, "Release Ring Attenuate");
+		configParam<ChainParamQuantity>(ARINGATT_PARAM, -0.2, 0.2, 0.f, "Attack Ring Attenuate");
+		configParam<ChainParamQuantity>(DRINGATT_PARAM, -0.2, 0.2, 0.f, "Decay Ring Attenuate");
+		configParam<ChainParamQuantity>(SRINGATT_PARAM, -0.2, 0.2, 0.f, "Sustain Ring Attenuate");
+		configParam<ChainParamQuantity>(RRINGATT_PARAM, -0.2, 0.2, 0.f, "Release Ring Attenuate");
 		//Basic ADSR controls (time,time,level,time)
 		configParam(A_PARAM, 0.5, 1.5, 1.1125, "Attack Time");
 		configParam(D_PARAM, 0.9, 1.5, 1.216, "Decay Time");
