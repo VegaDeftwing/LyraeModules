@@ -28,7 +28,7 @@ struct Vega : Module {
 		GLOBALRINGATT_PARAM,
 		GLOBALRINGOFFSET_PARAM,
 		ANGER_PARAM,
-		SMOOTH_PARAM,
+		TRACK_PARAM,
 		SANDH_PARAM,
 		NUM_PARAMS
 	};
@@ -134,8 +134,8 @@ struct Vega : Module {
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 		//S&H Section
-		configParam(SANDH_PARAM, 40.f, 1.f, 1.f, "S&H Frequency");
-		configParam(SMOOTH_PARAM, .4f, .499f, .499f, "Slew after S&H");
+		configParam(SANDH_PARAM, 40.f, 1.f, 40.f, "S&H Frequency");
+		configParam(TRACK_PARAM, 0.f, 1.f, 0.f, "Slew after S&H");
 	}
 
 	//Current stage 0=A 1=D 2=S 3=R
@@ -175,12 +175,17 @@ struct Vega : Module {
 	int DMMode = 0;
 	int SMMode = 0;
 	int RMMode = 0;
-	//Alt mode in R-Click menue to switch the negitive output from -output to env
+	//Alt mode in R-Click menu to switch the negitive output from -output to env
 	bool outputAlt = false; //Use negitive output as dry
+	//Alt mode in R-Click menu to switch the release gate output to an EOR trigger
+	bool outputEOR = false; //Use negitive output as dry
+	//Alt mode in R-Click menu to switch the per-stage gate outputs to triggers
+	bool outputTriggers = false; //Use negitive output as dry
 	//This holds the sustain level as it's used a lot, running getValue() a lot is inefficient and hard to read
 	float sus = 0.75;
 	//Oscilator for S&H
 	float sampleSquare = 0.f;
+	dsp::ExponentialSlewLimiter Slew;
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -340,6 +345,7 @@ struct Vega : Module {
 								output = modulation + env;
 							}
 							break;
+						//TODO add inverse modulation mode, just flipping and offset the envelope - needs done to all 3 slope'd stages
 						default:
 							output = modulation * env + env;
 							break;
@@ -510,9 +516,8 @@ struct Vega : Module {
 				perStageOutput(3,ROutMode);
 			} //End release stage
 
-			//Output
-			//TODO S&H is done, but this needs smoothing still
-			if (sampleSquare >= .499f){
+			//Output, this first if controls the s&h and the TRACK_PARAM the track&hold amount
+			if (sampleSquare >= (.499f - params[TRACK_PARAM].getValue())){
 				if (inputs[GLOBALRING_INPUT].isConnected()){
 					if (outputs[MAINOUTP_OUTPUT].isConnected()){
 						outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
@@ -539,6 +544,7 @@ struct Vega : Module {
 					}
 				}
 			}
+			
 		} else{  //END isrunning
 			//Necessary as modulation/S&H may leave it high
 			outputs[MAINOUTM_OUTPUT].setVoltage(0.f);
@@ -646,7 +652,7 @@ struct VegaWidget : ModuleWidget {
 		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODE_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 96.118)), module, Vega::RCURVE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::SMOOTH_PARAM));
+		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::TRACK_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(37.0,122.0)), module, Vega::SANDH_PARAM));
 
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 14.839)), module, Vega::AMOD_INPUT));
@@ -660,9 +666,9 @@ struct VegaWidget : ModuleWidget {
 		addInput(createInputCentered<InJack>(mm2px(Vec(20.23, 110.027)), module, Vega::GLOBALRING_INPUT));
 		//TODO add input for s&h rate control
 		//TODO Move inputs around in general
-		// Gate Ring S&H anger
-		//      att  off
-		//      off  sth
+		// Gate Ring S&H   anger
+		//      att  freq 
+		//      off  track
 		// Maybe add slight curved cuts into panel to divide the sections
 
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 14.839)), module, Vega::AOUT_OUTPUT));
@@ -703,11 +709,45 @@ struct VegaWidget : ModuleWidget {
             }
         };
 
+		struct VegaOutputEORItem : MenuItem{
+            Vega *vega;
+
+            void onAction(const event::Action &e) override
+            {
+                vega->outputEOR = !vega->outputEOR;
+            }
+            void step() override
+            {
+                rightText = CHECKMARK(vega->outputEOR);
+            }
+        };
+
+		struct VegaOutputTriggersItem : MenuItem{
+            Vega *vega;
+
+            void onAction(const event::Action &e) override
+            {
+                vega->outputTriggers = !vega->outputTriggers;
+            }
+            void step() override
+            {
+                rightText = CHECKMARK(vega->outputTriggers);
+            }
+        };
+
 		menu->addChild(new MenuEntry);
 		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
         altOutput->vega = vega;
-		//TODO option to make Release gate EOR
 		menu->addChild(altOutput);
+
+		VegaOutputEORItem *eorOutput = createMenuItem<VegaOutputEORItem>("Release Gate → EOR Trig");
+        eorOutput->vega = vega;
+		menu->addChild(eorOutput);
+
+		VegaOutputTriggersItem *triggersOutput = createMenuItem<VegaOutputTriggersItem>("Stage Gates to Trigs");
+		triggersOutput->vega = vega;
+		menu->addChild(triggersOutput);
+
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
