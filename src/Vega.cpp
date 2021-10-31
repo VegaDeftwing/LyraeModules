@@ -257,6 +257,11 @@ struct Vega : Module {
 				lights[offset + 1].setBrightness(0.f);
 				lights[offset + 2].setBrightness(1.f);
 				break;
+			case 3:
+				lights[offset + 0].setBrightness(1.f);
+				lights[offset + 1].setBrightness(1.f);
+				lights[offset + 2].setBrightness(1.f);
+				break;
 			default:
 				lights[offset + 0].setBrightness(0.f);
 				lights[offset + 1].setBrightness(0.f);
@@ -338,14 +343,16 @@ struct Vega : Module {
 						case 1: // Addition
 							output = modulation + env;
 							break;
-						case 3: // Self-Env Addition
+						case 2: // Self-Env Addition
 							if (env <= 0.2){ //first 20% of Attack stage
 								output = (modulation * env * 10) + env;
 							} else{
 								output = modulation + env;
 							}
 							break;
-						//TODO add inverse modulation mode, just flipping and offset the envelope - needs done to all 3 slope'd stages
+						case 3:
+							output = ((-env + 1) * modulation) + env;
+							break;
 						default:
 							output = modulation * env + env;
 							break;
@@ -391,7 +398,9 @@ struct Vega : Module {
 					//modulation with xfade, envelope gets inverted to make it similar to the attack envelope
 					modulation = simd::crossfade(modulationSource * params[DRINGATT_PARAM].getValue(),
 												 modulationDest * params[SRINGATT_PARAM].getValue(),
-												 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
+												 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.01)))));
+												 //.01 is still not perfect, low sustain vals will still cause issues.
+												 //but, it makes the range of bad values low enough to just let clamping handle the weird situations.
 					switch (DMMode){
 					case 0: // Ring
 						output = modulation * env + env;
@@ -399,13 +408,16 @@ struct Vega : Module {
 					case 1: // Addition
 						output = modulation + env;
 						break;
-					case 3: // Self-Env Addition
+					case 2: // Self-Env Addition
 						if ((-env + 1 * (1/sus)) <= 0.2){ //first 20% of decay stage
 							output = (modulation * env * 10) + env;
 						} else{
 							output = modulation + env;
 						}
 						break;
+					case 3:
+							output = ((-env + sus) * modulation) + env;
+							break;
 					default:
 						output = modulation * env + env;
 						break;
@@ -486,19 +498,22 @@ struct Vega : Module {
 				modulation = simd::crossfade(modulationSource * params[RRINGATT_PARAM].getValue(),
 											 modulationDest * params[SRINGATT_PARAM].getValue(),
 											 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
-				switch (DMMode){
+				switch (RMMode){
 				case 0: // Ring
 					output = modulation * env + env;
 					break;
 				case 1: // Addition
 					output = modulation + env;
 					break;
-				case 3: // Self-Env Addition
+				case 2: // Self-Env Addition
 					if ((-env + 1 * (1/sus)) <= 0.2){ //first 20% of release stage
 						output = (modulation * env * 10) + env;
 					} else{
 						output = modulation + env;
 					}
+					break;
+				case 3:
+					output = ((-env + sus) * modulation) + env;
 					break;
 				default:
 					output = modulation * env + env;
@@ -517,29 +532,32 @@ struct Vega : Module {
 			} //End release stage
 
 			//Output, this first if controls the s&h and the TRACK_PARAM the track&hold amount
+			//output is clampped to -12 and 12. There's just to much going on to ensure that
+			//bad outputs can't happen.
+			
 			if (sampleSquare >= (.499f - params[TRACK_PARAM].getValue())){
 				if (inputs[GLOBALRING_INPUT].isConnected()){
 					if (outputs[MAINOUTP_OUTPUT].isConnected()){
-						outputs[MAINOUTP_OUTPUT].setVoltage(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+						outputs[MAINOUTP_OUTPUT].setVoltage(simd::clamp(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 					}
 					if (outputs[MAINOUTM_OUTPUT].isConnected()){
 						if (outputAlt){
 							//Right Click menu option
-							outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(env * 10.f, -12.0, 12.0));
 						} else{
-							outputs[MAINOUTM_OUTPUT].setVoltage(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()));
+							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(-1.f * output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 						}
 					}
 				} else{ // If no ring input connected, the offset knob works as a volume knob, to add more headroom when necessary
 					if (outputs[MAINOUTP_OUTPUT].isConnected()){
-						outputs[MAINOUTP_OUTPUT].setVoltage(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+						outputs[MAINOUTP_OUTPUT].setVoltage(simd::clamp(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 					}
 					if (outputs[MAINOUTM_OUTPUT].isConnected()){
 						if (outputAlt){
 							//Right click menu option
-							outputs[MAINOUTM_OUTPUT].setVoltage(env * 10.f);
+							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(env * 10.f,-12.0,12.0));
 						} else{
-							outputs[MAINOUTM_OUTPUT].setVoltage(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()));
+							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(output * (-10.f * params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 						}
 					}
 				}
@@ -586,11 +604,11 @@ struct Vega : Module {
 			}
 			// toggle states for Modulation Modes, update mode LED respectively
 			if (AMDetect.process(params[ARINGMODE_PARAM].getValue())) {
-				AMMode = (AMMode + 1)%3;
+				AMMode = (AMMode + 1)%4;
 				setModeLight(0,AMMode);
 			}
 			if (DMDetect.process(params[DRINGMODE_PARAM].getValue())) {
-				DMMode = (DMMode + 1)%3;
+				DMMode = (DMMode + 1)%4;
 				setModeLight(1,DMMode);
 			}
 			if (SMDetect.process(params[SRINGMODE_PARAM].getValue())) {
@@ -598,7 +616,7 @@ struct Vega : Module {
 				setModeLight(2,SMMode);
 			}
 			if (RMDetect.process(params[RRINGMODE_PARAM].getValue())) {
-				RMMode = (RMMode + 1)%3;
+				RMMode = (RMMode + 1)%4;
 				setModeLight(3,RMMode);
 			}
 		}
