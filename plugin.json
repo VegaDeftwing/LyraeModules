@@ -42,6 +42,14 @@
       "tags": [
         "Envelope Generator"
       ]
+    },
+    {
+      "slug": "BD383238",
+      "name": "BD383238",
+      "description": "Expander for Vega ADSR",
+      "tags": [
+        "Expander"
+      ]
     }
   ]
 }

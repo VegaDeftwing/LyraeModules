@@ -10,6 +10,7 @@ void init(Plugin* p) {
 	p->addModel(modelGamma);
 	p->addModel(modelDelta);
 	p->addModel(modelVega);
+	p->addModel(modelBD383238);
 	// Add modules here
 	// p->addModel(modelMyModule);
 
