@@ -1,3 +1,4 @@
+#pragma once
 #include "plugin.hpp"
 
 struct Vega : Module {
@@ -98,6 +99,15 @@ struct Vega : Module {
 			return((1 + vega->sus)/2);
 		}
 	};
+
+	Module* rightModule;
+	float aext = 0.f;
+	float dext = 0.f;
+	float sext = 0.f;
+	float rext = 0.f;
+	float acext = 0.f;
+	float dcext = 0.f;
+	float rcext = 0.f;
 
 	Vega() {
 		processDivider.setDivision(64);
@@ -280,7 +290,7 @@ struct Vega : Module {
 
 		if (isRunning) {
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
-			sus = params[S_PARAM].getValue();
+			sus = params[S_PARAM].getValue() +sext;
 
 			// Modulation destination is dependent on whatever input is being normalled to the sustain stage
 			// This is the signal that is used to crossfade the decay->sustain and the sustain->release
@@ -311,8 +321,8 @@ struct Vega : Module {
 			if (gate){
 				switch (stage){
 				case 0: // Attack
-					phasor += simd::pow(.000315,params[A_PARAM].getValue());
-					env = simd::pow(phasor,params[ACURVE_PARAM].getValue());
+					phasor += simd::pow(.000315,params[A_PARAM].getValue()+aext);
+					env = simd::pow(phasor,params[ACURVE_PARAM].getValue()+acext);
 
 					if (phasor > 1.0){
 						stage = 1;
@@ -370,16 +380,16 @@ struct Vega : Module {
 					
 					break;
 				case 1: // Decay
-					phasor -= simd::pow(.000315,params[D_PARAM].getValue());
+					phasor -= simd::pow(.000315,params[D_PARAM].getValue()+dext);
 					//using bezier curves (ish) because nothing else wanted to work
 					//p0 is starting point, p2 is the ending point, p1 is the control point
 					//t is the phasor from 0 to 1
 					//p1+(1-t)^2*(p0-p1)+t^2*(p2-p1)
-					env = params[DCURVE_PARAM].getValue() //p1
+					env = (params[DCURVE_PARAM].getValue()+dcext) //p1
 						  +simd::pow((1-phasor),2) //+(1-t)^2
-						  *(sus-params[DCURVE_PARAM].getValue()) //*(p0-p1)
+						  *(sus-(params[DCURVE_PARAM].getValue()+dcext)) //*(p0-p1)
 						  +simd::pow(phasor,2) //+t^2
-						  *(1-params[DCURVE_PARAM].getValue()); //*(p2-p1)
+						  *(1-(params[DCURVE_PARAM].getValue()+dcext)); //*(p2-p1)
 
 					if (phasor <= 0){
 						stage = 2;
@@ -476,8 +486,8 @@ struct Vega : Module {
 				stage = 3; //change to Release stage
 			}
 			if (stage == 3){ //Release (this check isn't really necessary as the end of gate implies this anyway)
-				phasor -= simd::pow(.000315,params[R_PARAM].getValue());
-				env = simd::pow(phasor*(1/(sus+.00001)),params[RCURVE_PARAM].getValue())*sus;
+				phasor -= simd::pow(.000315,params[R_PARAM].getValue() +rext);
+				env = simd::pow(phasor*(1/(sus+.00001)),params[RCURVE_PARAM].getValue()+rcext)*sus;
 
 				displayActive(3);
 
