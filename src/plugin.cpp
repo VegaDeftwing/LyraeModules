@@ -8,7 +8,9 @@ void init(Plugin* p) {
 	pluginInstance = p;
 	p->addModel(modelSulafat);
 	p->addModel(modelGamma);
-	//p->addModel(modelVega);
+	p->addModel(modelDelta);
+	p->addModel(modelVega);
+	p->addModel(modelBD383238);
 	// Add modules here
 	// p->addModel(modelMyModule);
 
