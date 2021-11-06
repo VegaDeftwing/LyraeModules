@@ -290,7 +290,7 @@ struct Vega : Module {
 
 		if (isRunning) {
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
-			sus = params[S_PARAM].getValue() +sext;
+			sus = params[S_PARAM].getValue() + sext;
 
 			// Modulation destination is dependent on whatever input is being normalled to the sustain stage
 			// This is the signal that is used to crossfade the decay->sustain and the sustain->release

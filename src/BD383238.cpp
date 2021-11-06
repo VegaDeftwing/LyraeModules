@@ -65,7 +65,7 @@ struct BD383238 : Module {
 
 			//S Levels
 			if (inputs[S_INPUT].isConnected()){
-					mother->sext = inputs[A_INPUT].getVoltage()/10;
+					mother->sext = inputs[S_INPUT].getVoltage()/10;
 			}else {
 				mother->sext = 0;
 			}
