@@ -8,7 +8,9 @@ using namespace rack;
 extern Plugin* pluginInstance;
 extern Model* modelSulafat;
 extern Model* modelGamma;
+extern Model* modelDelta;
 extern Model* modelVega;
+extern Model* modelBD383238;
 
 // Declare each Model, defined in each module source file
 // extern Model* modelMyModule;
@@ -29,11 +31,29 @@ struct HexKnob : app::SvgKnob {
     }
 };
 
+struct SnappingHexKnob : app::SvgKnob {
+    SnappingHexKnob() {
+        minAngle = -0.8 * M_PI;
+        maxAngle = 0.8 * M_PI;
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/HexKnob.svg")));
+        snap = true;
+        snapValue = 1;
+    }
+};
+
 struct SmallHexKnob : app::SvgKnob {
     SmallHexKnob() {
         minAngle = -0.8 * M_PI;
         maxAngle = 0.8 * M_PI;
         setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallHexKnob.svg")));
+    }
+};
+
+struct MedHexKnob : app::SvgKnob {
+    MedHexKnob() {
+        minAngle = -0.8 * M_PI;
+        maxAngle = 0.8 * M_PI;
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/MedHexKnob.svg")));
     }
 };
 

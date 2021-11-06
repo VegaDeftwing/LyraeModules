@@ -47,7 +47,8 @@ This is followed by the **ring + adv** stage. The controls in order from left to
 
 This section offers 4 modes: Ring, Add, Attack-Enveloped addition, and Decay-Enveloped addition.
 * Ring will apply a basic multiplication between the input signal and the respective envelope segment. This has the downside of the 'peak' of the attack causing a very strong modulation, which may transition awkwardly, even with interpolation.
-* Addition will do a basic addition of the input signal and the respective envelope segment. This keeps the level of modulation constant, but may mean that the start of the attack stage and end of the release stage can have gaps or extra bumps.
+  > Note, technically the full math is [(ring_input * attenuverter) * envelope_stage **+ enevelope_stage**] this addition is done so that the ring modulation is still centered around the evelope stage
+* Addition will do a basic addition (unity sum) of the input signal and the respective envelope segment. This keeps the level of modulation constant, but may mean that the start of the attack stage and end of the release stage can have gaps or extra bumps.
 * Attack-Enveloped Addition will cause the input signal to be the same as the ring modulated input, until the stage's signal goes over 1V. This gives a gental fade in of the modulation, without making it overtake the signal - **only available on the attack stage**
 * Decay-Enveloped Addition will cause the signal to be the simple sum of the two signals until the stage is only 1V above the next stage's level (sustain level or 0v on release) where instead the signal will be the ring-modulated signal, allowing for a cleaner fade to the next stage - **only available in the decay and release stages**
   * if there is no ring input on the sustain stage, the decay stage will fade to being multiplied by 0 instead of fading to being multiplied by the sustain level. This is provide a smooth transition if the sustain stage has no modulation
@@ -73,6 +74,19 @@ Idea: 8 bit A→D→A, but the most significant bit has a different input signal
 Idea: Sustain from that MIT licenced repo
 ## δ1 Lyra
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
+
+This module, frankly, is pretty useless.
+The top section is 3 cascaded ring-mod's, that is if you label them from top to bottom as A, B, C the operation is
+Left  = Left * -(A * (B * C))
+Right = Right * (A * (B * C))
+Each stage, A, B, C has it's own attenuator (left) and offset (right).
+If you would like to bypass this stage (other than inverting the left signal), just set all the offset knobs to their max value. **if you do not set the offset high or provide input for each of the 3 stages you will not get any output!**
+
+Next, is the phase-selected ring mod section. The upper, middle input is the phase input. at -5V the left input is used, at 0V the middle, and at +5V the right. Values between this will be a crossfade between two inputs. For example, at +2.5V the signal used will be the sum of half of the middle input and half of the right input. The LED on the upper left will show what output mix is being used by using full RED for the left input, GREEN for the middle input, and BLUE for the right input. Crossfade'd states will show a mix of RED and GREEN (Yellow) or GREEN and BLUE (Teelish). If no phase input is connected or if the module is set to "CLOCK MODE" in the right click menu, then the button will advance the stage directly, no smoothing will be applied.
+
+Finally, in the last section, the two inputs are actually **gate** inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right. 
+
+
 ## ε Lyrae
 > Epsilon Lyrae (ε Lyr, ε Lyrae), also known as the Double Double, is a multiple star system of at least five stars
 
