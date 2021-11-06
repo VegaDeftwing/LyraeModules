@@ -35,7 +35,7 @@ struct Delta : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
-		STAGE_LIGHT,
+		ENUMS(STAGE_LIGHT, 3),
 		LMR_LIGHT,
 		RML_LIGHT,
 		NUM_LIGHTS
@@ -49,51 +49,143 @@ struct Delta : Module {
 		configParam(R2O_PARAM, 0.f, 1.f, 0.f, "Mid Stage Offset");
 		configParam(R3A_PARAM, 0.f, 1.f, 0.f, "Far Stage Attenuation");
 		configParam(R3O_PARAM, 0.f, 1.f, 0.f, "Far Stage Offset");
-		configParam(MANUALCLOCK_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(RMLGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(RMLGATEHOLD_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(LMRGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(LMRGATEHOLD_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(MANUALCLOCK_PARAM, 0.f, 1.f, 0.f, "Clock Advance");
+		configParam(RMLGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "Momentary RML");
+		configParam(RMLGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle RML");
+		configParam(LMRGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "Momentar LMR");
+		configParam(LMRGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle LMR");
 	}
 
 	float R1T = 0.f;
 	float R2T = 0.f;
 	float R3T = 0.f;
+	float BLOCK2 = 0.f;
+	int select = 0;
+	dsp::SchmittTrigger manualselect;
+	dsp::SchmittTrigger clockedselect;
+	dsp::SchmittTrigger RMLst;
+	dsp::SchmittTrigger LMRst;
+	dsp::SchmittTrigger cvRMLst;
+	dsp::SchmittTrigger cvLMRst;
+	bool RMLgate = false;
+	bool LMRgate = false;
+	float STAGE2OUTL = 0.f;
+	float STAGE2OUTR = 0.f;
+	float STAGE3OUTL = 0.f;
+	float STAGE3OUTR = 0.f;
+	bool lRMLgate = false;
+	bool lLMRgate = false;
+
 
 	void process(const ProcessArgs& args) override {
 		//BLOCK 1
 		if (inputs[R1_INPUT].isConnected()){
 			R1T = inputs[R1_INPUT].getVoltage() * params[R1A_PARAM].getValue() + params[R1O_PARAM].getValue();
 		} else{
-			R1T = params[R1O_PARAM].getValue();
+			R1T = 1.f;
 		}
 		
 		if (inputs[R2_INPUT].isConnected()){
 			R2T = inputs[R2_INPUT].getVoltage() * params[R2A_PARAM].getValue() + params[R2O_PARAM].getValue();
 		} else{
-			R2T = params[R2O_PARAM].getValue();
+			R2T = 1.f;
 		}
 		
 		if (inputs[R3_INPUT].isConnected()){
 			R3T = inputs[R3_INPUT].getVoltage() * params[R3A_PARAM].getValue() + params[R3O_PARAM].getValue();
 		} else{
-			R3T = params[R3O_PARAM].getValue();
+			R3T = 1.f;
 		}
 
 		float BLOCK1 = R1T * R2T * R3T;
-		float STAGE1OUTL = inputs[LEFT_INPUT].getVoltage() * -BLOCK1;
-		float STAGE1OUTR = inputs[RIGHT_INPUT].getVoltage() * BLOCK1;
+		float STAGE1OUTL = (inputs[LEFT_INPUT].getVoltage() * -BLOCK1)/10.f;
+		float STAGE1OUTR = (inputs[RIGHT_INPUT].getVoltage() * BLOCK1)/10.f;
 
 		//BLOCK2 - clocksel or phase sel CS1,CS2,CS3 with xfade
-		//STAGE2OUTL = STAGE1OUTL * BLOCK2
-		//STAGE2OUTR = STAGE1OUTR * -BLOCK2
+		if (inputs[CS1_INPUT].isConnected() || inputs[CS2_INPUT].isConnected() || inputs[CS3_INPUT].isConnected() ){
+			if(manualselect.process(params[MANUALCLOCK_PARAM].getValue())){
+				select = (select + 1)%3;
+			}
+			if(clockedselect.process(inputs[CLOCK_INPUT].getVoltage())){
+				select = (select + 1)%3;
+			}
+			
+			switch (select){
+			case 0:
+				BLOCK2 = inputs[CS1_INPUT].getVoltage();
+				lights[STAGE_LIGHT + 0].setBrightness(1.f);
+				lights[STAGE_LIGHT + 1].setBrightness(0.f);
+				lights[STAGE_LIGHT + 2].setBrightness(0.f);
+				break;
+			case 1:
+				BLOCK2 = inputs[CS2_INPUT].getVoltage();
+				lights[STAGE_LIGHT + 0].setBrightness(0.f);
+				lights[STAGE_LIGHT + 1].setBrightness(1.f);
+				lights[STAGE_LIGHT + 2].setBrightness(0.f);
+				break;
+			case 2:
+				BLOCK2 = inputs[CS3_INPUT].getVoltage();
+				lights[STAGE_LIGHT + 0].setBrightness(0.f);
+				lights[STAGE_LIGHT + 1].setBrightness(0.f);
+				lights[STAGE_LIGHT + 2].setBrightness(1.f);
+				break;
+			default:
+				BLOCK2 = 0.f;
+				break;
+			}
+			STAGE2OUTL = STAGE1OUTL * BLOCK2;
+			STAGE2OUTR = STAGE1OUTR * -BLOCK2;
+		} else {
+			STAGE2OUTL = STAGE1OUTL * 10.f;
+			STAGE2OUTR = STAGE1OUTR * 10.f;
+			lights[STAGE_LIGHT + 0].setBrightness(0.f);
+			lights[STAGE_LIGHT + 1].setBrightness(0.f);
+			lights[STAGE_LIGHT + 2].setBrightness(0.f);
+		}
 
 		//BLOCK3 - gate'd X-MOD of channels
-		// if(RMLGATE){ STAGE3OUTL = STAGE2OUTL * STAGE2OUTR } else{ STAGE3OUTL = STAGE2OUTL }
-		// if(LMRGATE){ STAGE3OUTR = STAGE2OUTR * STAGE2OUTL } else{ STAGE3OUTR = STAGE2OUTR }
+		if (params[RMLGATEMANUAL_PARAM].getValue()){
+			RMLgate = !lRMLgate;
+		} else { RMLgate = lRMLgate; lRMLgate = RMLgate;}
 
-		outputs[LEFT_OUTPUT].setVoltage(STAGE1OUTL);
-		outputs[RIGHT_OUTPUT].setVoltage(STAGE1OUTR);
+		if (params[LMRGATEMANUAL_PARAM].getValue()){
+			LMRgate = !lLMRgate;
+		} else { LMRgate = lLMRgate; lLMRgate = LMRgate; }
+
+		if(RMLst.process(params[RMLGATEHOLD_PARAM].getValue())){
+			lRMLgate = !lRMLgate;
+		}
+		if(LMRst.process(params[LMRGATEHOLD_PARAM].getValue())){
+			lLMRgate = !lLMRgate;
+		}
+
+		if(cvRMLst.process(inputs[RMLGATE_INPUT].getVoltage())){
+			lRMLgate = !lRMLgate;
+		}
+		if(cvLMRst.process(inputs[LMRGATE_INPUT].getVoltage())){
+			lLMRgate = !lLMRgate;
+		}
+		
+
+		if(RMLgate){
+			STAGE3OUTL = -STAGE2OUTL * STAGE2OUTR / 5.f;
+			lights[RML_LIGHT].setBrightness(1.f);
+		} else{ 
+			STAGE3OUTL = STAGE2OUTL;
+			lights[RML_LIGHT].setBrightness(0.f);
+		}
+
+		
+		if(LMRgate){ 
+			STAGE3OUTR = STAGE2OUTR * STAGE2OUTL / 5.f ;
+			lights[LMR_LIGHT].setBrightness(1.f);
+		} else{
+			STAGE3OUTR = STAGE2OUTR;
+			lights[LMR_LIGHT].setBrightness(0.f);
+		}
+
+		outputs[LEFT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTL/10.f))*10.f);
+		outputs[RIGHT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTR/10.f))*10.f);
 	}
 };
 
@@ -134,9 +226,9 @@ struct DeltaWidget : ModuleWidget {
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(14.795, 119.205)), module, Delta::LEFT_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(24.947, 119.205)), module, Delta::RIGHT_OUTPUT));
 
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(5.08, 63.413)), module, Delta::STAGE_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(20.25, 88.732)), module, Delta::LMR_LIGHT));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(20.25, 98.892)), module, Delta::RML_LIGHT));
+		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(5.08, 63.413)), module, Delta::STAGE_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(20.25, 88.732)), module, Delta::RML_LIGHT));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(20.25, 98.892)), module, Delta::LMR_LIGHT));
 	}
 };
 
