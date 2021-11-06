@@ -1,5 +1,5 @@
 #include "plugin.hpp"
-
+#include "Vega.hpp"
 
 struct BD383238 : Module {
 	enum ParamIds {
@@ -25,8 +25,77 @@ struct BD383238 : Module {
 	BD383238() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 	}
+	
+	Vega* findHostModulePtr(Module* module){
+		if (module){
+			if (module->rightExpander.module){
+				if (module->rightExpander.module->model == modelVega){
+					return reinterpret_cast<Vega*>(module->rightExpander.module);
+				}
+			}else{
+				return nullptr;
+			}
+		}
+		
+	}
+
 
 	void process(const ProcessArgs& args) override {
+		//connect to right expander module
+		Vega * mother = findHostModulePtr(this);
+
+		if (mother)
+		{
+			//TIME controls
+			if (inputs[A_INPUT].isConnected()){
+					mother->aext = inputs[A_INPUT].getVoltage()/10;
+			} else {
+				mother->aext = 0;
+			}
+			if (inputs[D_INPUT].isConnected()){
+					mother->dext = inputs[D_INPUT].getVoltage()/10;
+			} else {
+				mother->dext = 0;
+			}
+			if (inputs[R_INPUT].isConnected()){
+					mother->rext = inputs[R_INPUT].getVoltage()/10;
+			}else {
+				mother->rext = 0;
+			}
+
+			//S Levels
+			if (inputs[S_INPUT].isConnected()){
+					mother->sext = inputs[A_INPUT].getVoltage()/10;
+			}else {
+				mother->sext = 0;
+			}
+
+			//CURVE CONTROLS
+			if (inputs[ACURVE_INPUT].isConnected()){
+					mother->acext = inputs[ACURVE_INPUT].getVoltage()/10;
+			}else {
+				mother->acext = 0;
+			}
+			if (inputs[DCURVE_INPUT].isConnected()){
+					mother->dcext = inputs[DCURVE_INPUT].getVoltage()/10;
+			}else {
+				mother->dcext = 0;
+			}
+			if (inputs[RCURVE_INPUT].isConnected()){
+					mother->rcext = inputs[RCURVE_INPUT].getVoltage()/10;
+			}else {
+				mother->rcext = 0;
+			}
+
+		} else{
+		}
+		
+		
+
+	}
+
+	void onAdd() override {
+
 	}
 };
 
