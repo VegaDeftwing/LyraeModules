@@ -50,6 +50,14 @@
       "tags": [
         "Expander"
       ]
+    },
+    {
+      "slug": "Zeta",
+      "name": "Zeta",
+      "description": "Blank",
+      "tags": [
+        "Blank"
+      ]
     }
   ]
 }

@@ -11,6 +11,7 @@ void init(Plugin* p) {
 	p->addModel(modelDelta);
 	p->addModel(modelVega);
 	p->addModel(modelBD383238);
+	p->addModel(modelZeta);
 	// Add modules here
 	// p->addModel(modelMyModule);
 
