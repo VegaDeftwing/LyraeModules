@@ -54,6 +54,9 @@ struct Vega : Module {
 		RMOD_INPUT,
 		GATE_INPUT,
 		GLOBALRING_INPUT,
+		RETRIG_INPUT,
+		SANDH_INPUT,
+		ANGER_INPUT,
 		NUM_INPUTS
 	};
 	enum OutputIds {
@@ -185,6 +188,7 @@ struct Vega : Module {
 	float output = 0.f;
 	//Primary Gate Trigger
 	dsp::SchmittTrigger gateDetect;
+	dsp::SchmittTrigger retrigDetect;
 	//Output Mode Triggers
 	dsp::SchmittTrigger AOMDetect;
 	dsp::SchmittTrigger DOMDetect;
@@ -301,6 +305,12 @@ struct Vega : Module {
 		}
 
 		if (isRunning) {
+
+			bool retrig = inputs[RETRIG_INPUT].getVoltage() > 1.0;
+			if (retrigDetect.process(retrig)) {
+				stage = 0; //Attack
+			}
+
 			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
 			sus = params[S_PARAM].getValue() + sext;
 
@@ -665,7 +675,7 @@ struct VegaWidget : ModuleWidget {
 		setPanel(APP->window->loadSvg(asset::plugin(pluginInstance, "res/Vega.svg")));
 
 		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH*15, 5))); // Top
-		addChild(createWidget<Bolt>(Vec(box.size.x - 15 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH))); //Bottom
+		//addChild(createWidget<Bolt>(Vec(box.size.x - 15 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH))); //Bottom
 
 		addParam(createParamCentered<TL1105>(mm2px(Vec(54.916, 14.974)), module, Vega::AOUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 14.467)), module, Vega::A_PARAM));
@@ -673,8 +683,11 @@ struct VegaWidget : ModuleWidget {
 		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 14.839)), module, Vega::ARINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 22.839)), module, Vega::AFORCEADV_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 24.119)), module, Vega::ACURVE_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 106.448)), module, Vega::GLOBALRINGATT_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 113.94)), module, Vega::GLOBALRINGOFFSET_PARAM));
+		//golbal
+		//addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 106.448)), module, Vega::GLOBALRINGATT_PARAM));
+		//addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 113.94)), module, Vega::GLOBALRINGOFFSET_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(20.23, 120)), module, Vega::GLOBALRINGOFFSET_PARAM));
+		addParam(createParamCentered<SmallHexKnobInv>(mm2px(Vec(20.23, 120)), module, Vega::GLOBALRINGATT_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 38.839)), module, Vega::DOUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 38.467)), module, Vega::D_PARAM));
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 38.839)), module, Vega::DRINGATT_PARAM));
@@ -691,9 +704,12 @@ struct VegaWidget : ModuleWidget {
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 86.839)), module, Vega::RRINGATT_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 96.118)), module, Vega::RCURVE_PARAM));
-		addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::TRACK_PARAM));
-		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(37.0,122.0)), module, Vega::SANDH_PARAM));
+		// addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
+		// addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::TRACK_PARAM));
+		// addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(37.0,122.0)), module, Vega::SANDH_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(32.128,120)), module, Vega::SANDH_PARAM));
+		addParam(createParamCentered<SmallHexKnobInv>(mm2px(Vec(32.128,120)), module, Vega::TRACK_PARAM));
+		addParam(createParamCentered<HexKnob>(mm2px(Vec(44.026, 120)), module, Vega::ANGER_PARAM));
 
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 14.839)), module, Vega::AMOD_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 22.839)), module, Vega::AADV_INPUT));
@@ -702,14 +718,11 @@ struct VegaWidget : ModuleWidget {
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 62.839)), module, Vega::SMOD_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(41.196, 70.839)), module, Vega::SADV_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(33.02, 86.839)), module, Vega::RMOD_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(8.332, 110.027)), module, Vega::GATE_INPUT));
-		addInput(createInputCentered<InJack>(mm2px(Vec(20.23, 110.027)), module, Vega::GLOBALRING_INPUT));
-		//TODO add input for s&h rate control
-		//TODO Move inputs around in general
-		// Gate Ring S&H   anger
-		//      att  freq 
-		//      off  track
-		// Maybe add slight curved cuts into panel to divide the sections
+		addInput(createInputCentered<InJack>(mm2px(Vec(8.332, 107.027)), module, Vega::GATE_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(20.23, 107.027)), module, Vega::GLOBALRING_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(32.128, 107.027)), module, Vega::SANDH_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(8.332, 119.784)), module, Vega::RETRIG_INPUT));
+		addInput(createInputCentered<InJack>(mm2px(Vec(44.026, 107.027)), module, Vega::ANGER_INPUT));
 
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 14.839)), module, Vega::AOUT_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 22.839)), module, Vega::AGATE_OUTPUT));
@@ -720,7 +733,7 @@ struct VegaWidget : ModuleWidget {
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(62.624, 87.089)), module, Vega::ROUT_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(70.8, 95.089)), module, Vega::RGATE_OUTPUT));
 		addOutput(createOutputCentered<OutJack>(mm2px(Vec(63.014, 119.784)), module, Vega::MAINOUTM_OUTPUT));
-		addOutput(createOutputCentered<OutJack>(mm2px(Vec(74.54, 119.823)), module, Vega::MAINOUTP_OUTPUT));
+		addOutput(createOutputCentered<OutJack>(mm2px(Vec(74.54, 119.784)), module, Vega::MAINOUTP_OUTPUT));
 
 		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(37.108, 18.839)), module, Vega::AMODE_LIGHT));
 		addChild(createLightCentered<MediumLight<RedGreenBlueLight>>(mm2px(Vec(66.712, 18.839)), module, Vega::AGATE_LIGHT));
@@ -780,6 +793,28 @@ struct VegaWidget : ModuleWidget {
             }
         };
 
+		struct VegaDecTimeItem : MenuItem{
+            Vega *vega;
+
+            void onAction(const event::Action &e) override
+            {
+                vega->paramQuantities[Vega::A_PARAM]->setValue(vega->paramQuantities[Vega::A_PARAM]->getValue()-.1);
+				vega->paramQuantities[Vega::D_PARAM]->setValue(vega->paramQuantities[Vega::D_PARAM]->getValue()-.1);
+				vega->paramQuantities[Vega::R_PARAM]->setValue(vega->paramQuantities[Vega::R_PARAM]->getValue()-.1);
+            }
+        };
+
+		struct VegaIncTimeItem : MenuItem{
+            Vega *vega;
+
+            void onAction(const event::Action &e) override
+            {
+                vega->paramQuantities[Vega::A_PARAM]->setValue(vega->paramQuantities[Vega::A_PARAM]->getValue()+.1);
+				vega->paramQuantities[Vega::D_PARAM]->setValue(vega->paramQuantities[Vega::D_PARAM]->getValue()+.1);
+				vega->paramQuantities[Vega::R_PARAM]->setValue(vega->paramQuantities[Vega::R_PARAM]->getValue()+.1);
+            }
+        };
+
 		menu->addChild(new MenuEntry);
 		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
         altOutput->vega = vega;
@@ -792,6 +827,14 @@ struct VegaWidget : ModuleWidget {
 		// VegaOutputTriggersItem *triggersOutput = createMenuItem<VegaOutputTriggersItem>("Stage Gates to Trigs");
 		// triggersOutput->vega = vega;
 		// menu->addChild(triggersOutput);
+
+		VegaDecTimeItem *decTime = createMenuItem<VegaDecTimeItem>("Decrease Time");
+        decTime->vega = vega;
+		menu->addChild(decTime);
+
+		VegaIncTimeItem *incTime = createMenuItem<VegaIncTimeItem>("Increase Time");
+        incTime->vega = vega;
+		menu->addChild(incTime);
 
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));

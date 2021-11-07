@@ -50,6 +50,14 @@ struct SmallHexKnob : app::SvgKnob {
     }
 };
 
+struct SmallHexKnobInv : app::SvgKnob {
+    SmallHexKnobInv() {
+        minAngle = -0.8 * M_PI;
+        maxAngle = 0.8 * M_PI;
+        setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/SmallHexKnobInverted.svg")));
+    }
+};
+
 struct MedHexKnob : app::SvgKnob {
     MedHexKnob() {
         minAngle = -0.8 * M_PI;
