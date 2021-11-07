@@ -40,6 +40,7 @@ struct Vega : Module {
 		DRINGMODE_PARAM,
 		SRINGMODE_PARAM,
 		RRINGMODE_PARAM,
+		OUTPUTALT_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -164,8 +165,7 @@ struct Vega : Module {
 		configParam(DRINGMODE_PARAM, 0.f, 3.f, 0.f, "Decay Modulation Mode");
 		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Modulation Mode");
 		configParam(RRINGMODE_PARAM, 0.f, 3.f, 0.f, "Release Modulation Mode");
-
-
+		configParam(OUTPUTALT_PARAM, 0.f, 3.f, 0.f, "Dry output on negative");
 	}
 
 	//Current stage 0=A 1=D 2=S 3=R
@@ -447,7 +447,7 @@ struct Vega : Module {
 
 
 					displayActive(1);
-					perStageOutput(0,params[DOUTMODE_PARAM].getValue());
+					perStageOutput(1,params[DOUTMODE_PARAM].getValue());
 					forceAdvance(1); //checks if the force advance is true internally
 
 					break;
@@ -484,7 +484,7 @@ struct Vega : Module {
 					}
 
 					displayActive(2);
-					perStageOutput(0,params[SOUTMODE_PARAM].getValue());
+					perStageOutput(2,params[SOUTMODE_PARAM].getValue());
 					forceAdvance(2); //checks if the force advance is true internally
 
 					break;
@@ -550,7 +550,7 @@ struct Vega : Module {
 					isRunning = false;
 				}
 
-				perStageOutput(0,params[ROUTMODE_PARAM].getValue());
+				perStageOutput(3,params[ROUTMODE_PARAM].getValue());
 			} //End release stage
 
 			//Output, this first if controls the s&h and the TRACK_PARAM the track&hold amount
@@ -563,7 +563,7 @@ struct Vega : Module {
 						outputs[MAINOUTP_OUTPUT].setVoltage(simd::clamp(output * 10.f * (inputs[GLOBALRING_INPUT].getVoltage() * params[GLOBALRINGATT_PARAM].getValue() + params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 					}
 					if (outputs[MAINOUTM_OUTPUT].isConnected()){
-						if (outputAlt){
+						if (params[OUTPUTALT_PARAM].getValue()){
 							//Right Click menu option
 							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(env * 10.f, -12.0, 12.0));
 						} else{
@@ -575,7 +575,7 @@ struct Vega : Module {
 						outputs[MAINOUTP_OUTPUT].setVoltage(simd::clamp(output * (10.f * params[GLOBALRINGOFFSET_PARAM].getValue()),-12.0,12.0));
 					}
 					if (outputs[MAINOUTM_OUTPUT].isConnected()){
-						if (outputAlt){
+						if (params[OUTPUTALT_PARAM].getValue()){
 							//Right click menu option
 							outputs[MAINOUTM_OUTPUT].setVoltage(simd::clamp(env * 10.f,-12.0,12.0));
 						} else{
@@ -742,10 +742,15 @@ struct VegaWidget : ModuleWidget {
             void onAction(const event::Action &e) override
             {
                 vega->outputAlt = !vega->outputAlt;
+				if (vega->paramQuantities[Vega::OUTPUTALT_PARAM]->getValue() == 1.f){
+					vega->paramQuantities[Vega::OUTPUTALT_PARAM]->setValue(0.f);
+				} else {
+					vega->paramQuantities[Vega::OUTPUTALT_PARAM]->setValue(1.f);
+				}
             }
             void step() override
             {
-                rightText = CHECKMARK(vega->outputAlt);
+                rightText = CHECKMARK(vega->paramQuantities[Vega::OUTPUTALT_PARAM]->getValue() == 1.f);
             }
         };
 
@@ -780,13 +785,13 @@ struct VegaWidget : ModuleWidget {
         altOutput->vega = vega;
 		menu->addChild(altOutput);
 
-		VegaOutputEORItem *eorOutput = createMenuItem<VegaOutputEORItem>("Release Gate → EOR Trig");
-        eorOutput->vega = vega;
-		menu->addChild(eorOutput);
+		// VegaOutputEORItem *eorOutput = createMenuItem<VegaOutputEORItem>("Release Gate → EOR Trig");
+        // eorOutput->vega = vega;
+		// menu->addChild(eorOutput);
 
-		VegaOutputTriggersItem *triggersOutput = createMenuItem<VegaOutputTriggersItem>("Stage Gates to Trigs");
-		triggersOutput->vega = vega;
-		menu->addChild(triggersOutput);
+		// VegaOutputTriggersItem *triggersOutput = createMenuItem<VegaOutputTriggersItem>("Stage Gates to Trigs");
+		// triggersOutput->vega = vega;
+		// menu->addChild(triggersOutput);
 
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
