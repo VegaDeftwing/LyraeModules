@@ -13,6 +13,9 @@ struct Delta : Module {
 		RMLGATEHOLD_PARAM,
 		LMRGATEMANUAL_PARAM,
 		LMRGATEHOLD_PARAM,
+		SELECT_PARAM,
+		RML_PARAM,
+		LMR_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -54,30 +57,38 @@ struct Delta : Module {
 		configParam(RMLGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle RML");
 		configParam(LMRGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "Momentar LMR");
 		configParam(LMRGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle LMR");
+		configParam(SELECT_PARAM, 0.f, 2.f, 0.f, "Clock Select State");
+		configParam(LMR_PARAM, 0.f, 1.f, 0.f, "LMR State");
+		configParam(RML_PARAM, 0.f, 1.f, 0.f, "RML State");
 	}
 
 	float R1T = 0.f;
 	float R2T = 0.f;
 	float R3T = 0.f;
 	float BLOCK2 = 0.f;
-	int select = 0;
 	dsp::SchmittTrigger manualselect;
 	dsp::SchmittTrigger clockedselect;
 	dsp::SchmittTrigger RMLst;
 	dsp::SchmittTrigger LMRst;
 	dsp::SchmittTrigger cvRMLst;
 	dsp::SchmittTrigger cvLMRst;
-	bool RMLgate = false;
-	bool LMRgate = false;
+	//bool RMLgate = false;
+	//bool LMRgate = false;
 	float STAGE2OUTL = 0.f;
 	float STAGE2OUTR = 0.f;
 	float STAGE3OUTL = 0.f;
 	float STAGE3OUTR = 0.f;
 	bool lRMLgate = false;
 	bool lLMRgate = false;
-
+	bool init = false;
 
 	void process(const ProcessArgs& args) override {
+		if (!init){
+			init = true;
+			lRMLgate = params[RML_PARAM].getValue();
+			lLMRgate = params[LMR_PARAM].getValue();
+		}
+		
 		//BLOCK 1
 		if (inputs[R1_INPUT].isConnected()){
 			R1T = inputs[R1_INPUT].getVoltage() * params[R1A_PARAM].getValue() + params[R1O_PARAM].getValue();
@@ -104,13 +115,13 @@ struct Delta : Module {
 		//BLOCK2 - clocksel or phase sel CS1,CS2,CS3 with xfade
 		if (inputs[CS1_INPUT].isConnected() || inputs[CS2_INPUT].isConnected() || inputs[CS3_INPUT].isConnected() ){
 			if(manualselect.process(params[MANUALCLOCK_PARAM].getValue())){
-				select = (select + 1)%3;
+				params[SELECT_PARAM].setValue(((int)params[SELECT_PARAM].getValue() + 1)%3);
 			}
 			if(clockedselect.process(inputs[CLOCK_INPUT].getVoltage())){
-				select = (select + 1)%3;
+				params[SELECT_PARAM].setValue(((int)params[SELECT_PARAM].getValue() + 1)%3);
 			}
 			
-			switch (select){
+			switch ((int)params[SELECT_PARAM].getValue()){
 			case 0:
 				BLOCK2 = inputs[CS1_INPUT].getVoltage();
 				lights[STAGE_LIGHT + 0].setBrightness(1.f);
@@ -145,12 +156,12 @@ struct Delta : Module {
 
 		//BLOCK3 - gate'd X-MOD of channels
 		if (params[RMLGATEMANUAL_PARAM].getValue()){
-			RMLgate = !lRMLgate;
-		} else { RMLgate = lRMLgate; lRMLgate = RMLgate;}
+			params[RML_PARAM].setValue(!lRMLgate);
+		} else { params[RML_PARAM].setValue(lRMLgate); lRMLgate = params[RML_PARAM].getValue();}
 
 		if (params[LMRGATEMANUAL_PARAM].getValue()){
-			LMRgate = !lLMRgate;
-		} else { LMRgate = lLMRgate; lLMRgate = LMRgate; }
+			params[LMR_PARAM].setValue(!lLMRgate);
+		} else { params[LMR_PARAM].setValue(lLMRgate); lLMRgate = params[LMR_PARAM].getValue(); }
 
 		if(RMLst.process(params[RMLGATEHOLD_PARAM].getValue())){
 			lRMLgate = !lRMLgate;
@@ -165,9 +176,8 @@ struct Delta : Module {
 		if(cvLMRst.process(inputs[LMRGATE_INPUT].getVoltage())){
 			lLMRgate = !lLMRgate;
 		}
-		
 
-		if(RMLgate){
+		if((int)params[RML_PARAM].getValue()){
 			STAGE3OUTL = -STAGE2OUTL * STAGE2OUTR / 5.f;
 			lights[RML_LIGHT].setBrightness(1.f);
 		} else{ 
@@ -176,7 +186,7 @@ struct Delta : Module {
 		}
 
 		
-		if(LMRgate){ 
+		if((int)params[LMR_PARAM].getValue()){ 
 			STAGE3OUTR = STAGE2OUTR * STAGE2OUTL / 5.f ;
 			lights[LMR_LIGHT].setBrightness(1.f);
 		} else{

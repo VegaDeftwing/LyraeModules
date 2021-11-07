@@ -7,10 +7,10 @@ struct Vega : Module {
 		AFORCEADV_PARAM,
 		DFORCEADV_PARAM,
 		SFORCEADV_PARAM,
-		AOUTMODE_PARAM,
-		DOUTMODE_PARAM,
-		SOUTMODE_PARAM,
-		ROUTMODE_PARAM,
+		AOUTMODEBUTTON_PARAM,
+		DOUTMODEBUTTON_PARAM,
+		SOUTMODEBUTTON_PARAM,
+		ROUTMODEBUTTON_PARAM,
 		ARINGATT_PARAM,
 		DRINGATT_PARAM,
 		SRINGATT_PARAM,
@@ -19,10 +19,10 @@ struct Vega : Module {
 		D_PARAM,
 		S_PARAM,
 		R_PARAM,
-		ARINGMODE_PARAM,
-		DRINGMODE_PARAM,
-		SRINGMODE_PARAM,
-		RRINGMODE_PARAM,
+		ARINGMODEBUTTON_PARAM,
+		DRINGMODEBUTTON_PARAM,
+		SRINGMODEBUTTON_PARAM,
+		RRINGMODEBUTTON_PARAM,
 		ACURVE_PARAM,
 		DCURVE_PARAM,
 		RCURVE_PARAM,
@@ -31,6 +31,15 @@ struct Vega : Module {
 		ANGER_PARAM,
 		TRACK_PARAM,
 		SANDH_PARAM,
+		//Added to save state
+		AOUTMODE_PARAM,
+		DOUTMODE_PARAM,
+		SOUTMODE_PARAM,
+		ROUTMODE_PARAM,
+		ARINGMODE_PARAM,
+		DRINGMODE_PARAM,
+		SRINGMODE_PARAM,
+		RRINGMODE_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -122,15 +131,15 @@ struct Vega : Module {
 		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
 		//Output mode buttons
-		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
-		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
-		configParam(SOUTMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Mode");
-		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		configParam(AOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
+		configParam(DOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
+		configParam(SOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Sustain Output Mode");
+		configParam(ROUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Release Output Mode");
 		//Modulation mode buttons
-		configParam(ARINGMODE_PARAM, 0.f, 1.f, 0.f, "Attack Ring Mode");
-		configParam(DRINGMODE_PARAM, 0.f, 1.f, 0.f, "Decay Ring Mode");
-		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Ring Mode");
-		configParam(RRINGMODE_PARAM, 0.f, 1.f, 0.f, "Release Ring Mode");
+		configParam(ARINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Attack Modulation Mode");
+		configParam(DRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Decay Modulation Mode");
+		configParam(SRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Sustain Modulation Mode");
+		configParam(RRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Release Modulation Mode");
 		//A,D,R curve parameters - Decay get's the default set to be linear based on the value of S_PARAM
 		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
 		configParam<BezierParamQuantity>(DCURVE_PARAM, 0.f, 1.3f, 0.75, "Decay Curve");
@@ -146,6 +155,17 @@ struct Vega : Module {
 		//S&H Section
 		configParam(SANDH_PARAM, 40.f, 1.f, 40.f, "S&H Frequency");
 		configParam(TRACK_PARAM, 0.f, 1.f, 0.f, "Slew after S&H");
+		//Internal parameters for saving state
+		configParam(AOUTMODE_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
+		configParam(DOUTMODE_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
+		configParam(SOUTMODE_PARAM, 0.f, 2.f, 0.f, "Sustain Output Mode");
+		configParam(ROUTMODE_PARAM, 0.f, 1.f, 0.f, "Release Output Mode");
+		configParam(ARINGMODE_PARAM, 0.f, 3.f, 0.f, "Attack Modulation Mode");
+		configParam(DRINGMODE_PARAM, 0.f, 3.f, 0.f, "Decay Modulation Mode");
+		configParam(SRINGMODE_PARAM, 0.f, 1.f, 0.f, "Sustain Modulation Mode");
+		configParam(RRINGMODE_PARAM, 0.f, 3.f, 0.f, "Release Modulation Mode");
+
+
 	}
 
 	//Current stage 0=A 1=D 2=S 3=R
@@ -175,27 +195,19 @@ struct Vega : Module {
 	dsp::SchmittTrigger DMDetect;
 	dsp::SchmittTrigger SMDetect;
 	dsp::SchmittTrigger RMDetect;
-	//Output modes, 0=plain env (env), 1=env w/ modulation (output), 2=env-sus (Decay only)
-	int AOutMode = 0;
-	int DOutMode = 0;
-	int SOutMode = 0;
-	int ROutMode = 0;
-	//Modulation mode, 0=ring+env, 1=add, 2=add w/ fade, 3=ring
-	int AMMode = 0;
-	int DMMode = 0;
-	int SMMode = 0;
-	int RMMode = 0;
 	//Alt mode in R-Click menu to switch the negitive output from -output to env
+	//TODO
 	bool outputAlt = false; //Use negitive output as dry
 	//Alt mode in R-Click menu to switch the release gate output to an EOR trigger
+	//TODO - not yet implimented
 	bool outputEOR = false; //Use negitive output as dry
 	//Alt mode in R-Click menu to switch the per-stage gate outputs to triggers
+	//TODO - not yet implimented
 	bool outputTriggers = false; //Use negitive output as dry
 	//This holds the sustain level as it's used a lot, running getValue() a lot is inefficient and hard to read
 	float sus = 0.75;
 	//Oscilator for S&H
 	float sampleSquare = 0.f;
-	dsp::ExponentialSlewLimiter Slew;
 
 	void displayActive(int lstage){
 		lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
@@ -346,7 +358,7 @@ struct Vega : Module {
 						}
 						
 						
-						switch (AMMode){
+						switch ((int)params[ARINGMODE_PARAM].getValue()){
 						case 0: // Ring
 							output = modulation * env + env;
 							break;
@@ -375,7 +387,7 @@ struct Vega : Module {
 					}
 
 					displayActive(0);
-					perStageOutput(0,AOutMode);
+					perStageOutput(0,params[AOUTMODE_PARAM].getValue());
 					forceAdvance(0); //checks if the force advance is true internally
 					
 					break;
@@ -411,7 +423,7 @@ struct Vega : Module {
 												 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.01)))));
 												 //.01 is still not perfect, low sustain vals will still cause issues.
 												 //but, it makes the range of bad values low enough to just let clamping handle the weird situations.
-					switch (DMMode){
+					switch ((int)params[DRINGMODE_PARAM].getValue()){
 					case 0: // Ring
 						output = modulation * env + env;
 						break;
@@ -435,7 +447,7 @@ struct Vega : Module {
 
 
 					displayActive(1);
-					perStageOutput(1,DOutMode);
+					perStageOutput(0,params[DOUTMODE_PARAM].getValue());
 					forceAdvance(1); //checks if the force advance is true internally
 
 					break;
@@ -459,7 +471,7 @@ struct Vega : Module {
 					modulation = modulationSource * params[SRINGATT_PARAM].getValue();
 
 					//Sustain stage has less modes because it's constant
-					switch (SMMode){
+					switch ((int)params[SRINGMODE_PARAM].getValue()){
 					case 0: // Ring
 						output = modulation * env + env;
 						break;
@@ -472,7 +484,7 @@ struct Vega : Module {
 					}
 
 					displayActive(2);
-					perStageOutput(2,SOutMode);
+					perStageOutput(0,params[SOUTMODE_PARAM].getValue());
 					forceAdvance(2); //checks if the force advance is true internally
 
 					break;
@@ -508,7 +520,7 @@ struct Vega : Module {
 				modulation = simd::crossfade(modulationSource * params[RRINGATT_PARAM].getValue(),
 											 modulationDest * params[SRINGATT_PARAM].getValue(),
 											 (simd::fmax(0,anger*(-env)-anger+(1/(sus+0.0001)))));
-				switch (RMMode){
+				switch ((int)params[RRINGMODE_PARAM].getValue()){
 				case 0: // Ring
 					output = modulation * env + env;
 					break;
@@ -538,7 +550,7 @@ struct Vega : Module {
 					isRunning = false;
 				}
 
-				perStageOutput(3,ROutMode);
+				perStageOutput(0,params[ROUTMODE_PARAM].getValue());
 			} //End release stage
 
 			//Output, this first if controls the s&h and the TRACK_PARAM the track&hold amount
@@ -580,54 +592,54 @@ struct Vega : Module {
 		}
 
 		if (processDivider.process()){
+			lights[AGATE_LIGHT + 2].setBrightness(params[AOUTMODE_PARAM].getValue() ? 1.f : 0.f);
+			switch ((int)params[DOUTMODE_PARAM].getValue()){
+			case 0:
+				lights[DGATE_LIGHT + 1].setBrightness(0.f);
+				lights[DGATE_LIGHT + 2].setBrightness(0.f);
+				break;
+			case 1:
+				lights[DGATE_LIGHT + 1].setBrightness(0.f);
+				lights[DGATE_LIGHT + 2].setBrightness(1.f);
+				break;
+			case 2:
+				lights[DGATE_LIGHT + 1].setBrightness(1.f);
+				lights[DGATE_LIGHT + 2].setBrightness(0.f);
+				break;
+			default:
+				break;
+			}
+			lights[SGATE_LIGHT + 2].setBrightness(params[SOUTMODE_PARAM].getValue() ? 1.f : 0.f);
+			lights[RGATE_LIGHT + 2].setBrightness(params[ROUTMODE_PARAM].getValue() ? 1.f : 0.f);
+			setModeLight(0,(int)params[ARINGMODE_PARAM].getValue());
+			setModeLight(1,(int)params[DRINGMODE_PARAM].getValue());
+			setModeLight(2,(int)params[SRINGMODE_PARAM].getValue());
+			setModeLight(3,(int)params[RRINGMODE_PARAM].getValue());
 			//Yes, I realize it's bad style to not put these in a loop but ¯\_(ツ)_/¯
-			if (AOMDetect.process(params[AOUTMODE_PARAM].getValue())) {
-				AOutMode = (AOutMode + 1)%2;
-				lights[AGATE_LIGHT + 2].setBrightness(AOutMode ? 1.f : 0.f);
+			if (AOMDetect.process(params[AOUTMODEBUTTON_PARAM].getValue())) {
+				params[AOUTMODE_PARAM].setValue(((int)params[AOUTMODE_PARAM].getValue() + 1)%2);
 			}
-			if (DOMDetect.process(params[DOUTMODE_PARAM].getValue())) {
-				DOutMode = (DOutMode + 1)%3;
-				switch (DOutMode){
-				case 0:
-					lights[DGATE_LIGHT + 1].setBrightness(0.f);
-					lights[DGATE_LIGHT + 2].setBrightness(0.f);
-					break;
-				case 1:
-					lights[DGATE_LIGHT + 1].setBrightness(0.f);
-					lights[DGATE_LIGHT + 2].setBrightness(1.f);
-					break;
-				case 2:
-					lights[DGATE_LIGHT + 1].setBrightness(1.f);
-					lights[DGATE_LIGHT + 2].setBrightness(0.f);
-					break;
-				default:
-					break;
-				}
+			if (DOMDetect.process(params[DOUTMODEBUTTON_PARAM].getValue())) {
+				params[DOUTMODE_PARAM].setValue(((int)params[DOUTMODE_PARAM].getValue() + 1)%3);
 			}
-			if (SOMDetect.process(params[SOUTMODE_PARAM].getValue())) {
-				SOutMode = (SOutMode + 1)%2;
-				lights[SGATE_LIGHT + 2].setBrightness(SOutMode ? 1.f : 0.f);
+			if (SOMDetect.process(params[SOUTMODEBUTTON_PARAM].getValue())) {
+				params[SOUTMODE_PARAM].setValue(((int)params[SOUTMODE_PARAM].getValue() + 1)%2);
 			}
-			if (ROMDetect.process(params[ROUTMODE_PARAM].getValue())) {
-				ROutMode = (ROutMode + 1)%2;
-				lights[RGATE_LIGHT + 2].setBrightness(ROutMode ? 1.f : 0.f);
+			if (ROMDetect.process(params[ROUTMODEBUTTON_PARAM].getValue())) {
+				params[ROUTMODE_PARAM].setValue(((int)params[ROUTMODE_PARAM].getValue() + 1)%2);
 			}
 			// toggle states for Modulation Modes, update mode LED respectively
-			if (AMDetect.process(params[ARINGMODE_PARAM].getValue())) {
-				AMMode = (AMMode + 1)%4;
-				setModeLight(0,AMMode);
+			if (AMDetect.process(params[ARINGMODEBUTTON_PARAM].getValue())) {
+				params[ARINGMODE_PARAM].setValue(((int)params[ARINGMODE_PARAM].getValue() + 1)%4);
 			}
-			if (DMDetect.process(params[DRINGMODE_PARAM].getValue())) {
-				DMMode = (DMMode + 1)%4;
-				setModeLight(1,DMMode);
+			if (DMDetect.process(params[DRINGMODEBUTTON_PARAM].getValue())) {
+				params[DRINGMODE_PARAM].setValue(((int)params[DRINGMODE_PARAM].getValue() + 1)%4);
 			}
-			if (SMDetect.process(params[SRINGMODE_PARAM].getValue())) {
-				SMMode = (SMMode + 1)%2;
-				setModeLight(2,SMMode);
+			if (SMDetect.process(params[SRINGMODEBUTTON_PARAM].getValue())) {
+				params[SRINGMODE_PARAM].setValue(((int)params[SRINGMODE_PARAM].getValue() + 1)%2);
 			}
-			if (RMDetect.process(params[RRINGMODE_PARAM].getValue())) {
-				RMMode = (RMMode + 1)%4;
-				setModeLight(3,RMMode);
+			if (RMDetect.process(params[RRINGMODEBUTTON_PARAM].getValue())) {
+				params[RRINGMODE_PARAM].setValue(((int)params[RRINGMODE_PARAM].getValue() + 1)%4);
 			}
 		}
 	}
@@ -655,29 +667,29 @@ struct VegaWidget : ModuleWidget {
 		addChild(createWidget<Bolt>(Vec(RACK_GRID_WIDTH*15, 5))); // Top
 		addChild(createWidget<Bolt>(Vec(box.size.x - 15 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH))); //Bottom
 
-		addParam(createParamCentered<TL1105>(mm2px(Vec(54.916, 14.974)), module, Vega::AOUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.916, 14.974)), module, Vega::AOUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 14.467)), module, Vega::A_PARAM));
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 14.839)), module, Vega::ARINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 14.839)), module, Vega::ARINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 14.839)), module, Vega::ARINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 22.839)), module, Vega::AFORCEADV_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 24.119)), module, Vega::ACURVE_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 106.448)), module, Vega::GLOBALRINGATT_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(29.573, 113.94)), module, Vega::GLOBALRINGOFFSET_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 38.839)), module, Vega::DOUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 38.839)), module, Vega::DOUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 38.467)), module, Vega::D_PARAM));
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 38.839)), module, Vega::DRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 38.839)), module, Vega::DRINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 38.839)), module, Vega::DRINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 46.839)), module, Vega::DFORCEADV_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 48.119)), module, Vega::DCURVE_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 63.089)), module, Vega::SOUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 63.089)), module, Vega::SOUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 62.839)), module, Vega::SRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 62.839)), module, Vega::SRINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 62.839)), module, Vega::SRINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 66.839)), module, Vega::S_PARAM));
 		addParam(createParamCentered<TL1105>(mm2px(Vec(33.02, 70.839)), module, Vega::SFORCEADV_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 87.089)), module, Vega::ROUTMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(54.448, 87.089)), module, Vega::ROUTMODEBUTTON_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(8.0, 86.467)), module, Vega::R_PARAM));
 		addParam(createParamCentered<MedHexKnob>(mm2px(Vec(24.844, 86.839)), module, Vega::RRINGATT_PARAM));
-		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODE_PARAM));
+		addParam(createParamCentered<TL1105>(mm2px(Vec(41.196, 86.839)), module, Vega::RRINGMODEBUTTON_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(8.0, 96.118)), module, Vega::RCURVE_PARAM));
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(46.111, 109.923)), module, Vega::ANGER_PARAM));
 		addParam(createParamCentered<SmallHexKnob>(mm2px(Vec(46.111,122.0)), module, Vega::TRACK_PARAM));
