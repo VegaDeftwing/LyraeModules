@@ -153,7 +153,7 @@ struct Vega : Module {
 		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
 		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
 		//Global controls - Anger controls X-FADE time. Offset acts as attenuator if no ring input
-		configParam(ANGER_PARAM, 0.f, 1.f, .5, "Transistion Time Control");
+		configParam(ANGER_PARAM, 1.f, 0.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");
 		configParam(GLOBALRINGOFFSET_PARAM, 0.f, 1.f, 1.f, "Global Ring Offset");
 		//S&H Section
@@ -311,7 +311,7 @@ struct Vega : Module {
 				stage = 0; //Attack
 			}
 
-			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1;
+			float anger = (simd::pow(params[ANGER_PARAM].getValue(),2)*8)+1-(inputs[ANGER_INPUT].getVoltage()/10.f);
 			sus = params[S_PARAM].getValue() + sext;
 
 			// Modulation destination is dependent on whatever input is being normalled to the sustain stage
@@ -330,7 +330,14 @@ struct Vega : Module {
 			}
 
 			//Generate S&H osc
-			sampleSquare += args.sampleTime * params[SANDH_PARAM].getValue();
+			if (inputs[SANDH_INPUT].isConnected()){
+				sampleSquare += args.sampleTime * (params[SANDH_PARAM].getValue() * (1.f-(inputs[SANDH_INPUT].getVoltage()/10.f)));
+			} else{
+				sampleSquare += args.sampleTime * params[SANDH_PARAM].getValue();
+			}
+			
+			
+			
 			if (sampleSquare >= .5f){
 				sampleSquare = -.5f;
 			}
