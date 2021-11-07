@@ -36,12 +36,12 @@ The main inputs (at the bottom) are normalled. These inputs are multiplied (ring
 
 Vega is an ADSR with multiple per stage modulation options.
 
-Each stage has a **basic** control section, setting the time (or level, in the case of Sustain) and curve, ranging from Logarithmic, to Linear, to Exponential. With only the gate input connected and out+ output connected, this behaves as a normal ADSR.
+Each stage has a **basic** control section, setting the time (or level, in the case of Sustain) and curve (the smaller knobs), ranging from Logarithmic, to Linear, to Exponential. With only the gate input connected and out+ output connected, Vega behaves as a normal ADSR.
 
-This is followed by the **ring + adv** stage. The controls in order from left to right (or top to bottom, as they're angled) are
-* Attenuation for the ring input
-* The ring input
-* Ring input mode
+Things are made interesting with the **mod + adv** controls. The controls in order from left to right (or top to bottom, as they're angled) are
+* Attenuversion for the modulation input
+* The modulation input
+* Modulation input mode
 * Advance trigger input
 * Manual advance trigger
 
@@ -55,23 +55,25 @@ This section offers 4 modes: Ring, Add, Attack-Enveloped addition, and Decay-Env
 
 There is also a global ring input. This will **only** function in multiplication (basic ring modulation) mode and is done **post** all the other modulation.
 
-Finally, the anger knob: This knob controls how quickly the module will become angry with you and move to other modes of smooth transitions between stages. This is needed because the module has multiple ways of seeking a clean transition between stages. The module first tries check if both signals (the end of the current stage + modulation and the start of the next stage + modulation) are approximately equal. if they are, a transition (with linear interpolation) is done immediately. If they are *not* the anger knob will set how long it should wait for them to be, and if they do not align for a smooth transition after that amount of time, the module, becoming angry, will forcibly transition the two signals. While interpolation is still used for this transition, it may create audible clicks.
+The anger knob controls how the modulation inputs are crossfaded between stages, to prevent 'clicks' in the envelope.
 
-This brings up the use of the Advance trigger input as well as the manual trigger button input. Both are to used to force the module to be angry, forcing a move onto the next stage. This can be particularly interesting if the current stage has not yet actually completed, as whatever the current value is will be interpolated to the next value right away. This may create sharp, audible clicks though.
+Next up, the Advance trigger input and manual trigger button input: Both are to used to force the module to go to the next stage. Note that when going from attack to decay, decay will always start at 10V and that release will start from the level sustain is set to, regardless of if the sustain stage actually happens (if you self patch the sustain gate out to the advance input) 
 
-The module also has per-stage outputs. These will output the current stage's segment **without** modulation. The button will invert the direction of the slope. For example, with a decay stage going from 10V to 5V in 1 second, inverted, you would get an output with a positive slope going from 5V to 10V in 1 second. This can be useful for sending out envelopes to whatever will end up driving the ring input of the stage.
-There is also a per-stage gate output, which will be high so long as that stage is active. Note, the gate will stay high until the next stage has started, but the next stage will go high as soon as it's trying to start. This means, when being held waiting for a transition it is possible for two stages to have high gate outputs simultaneously. You may want to use boolean logic modules on these outputs accordingly.
+The module also has per-stage outputs. By default, these will output the current stage's segment **without** modulation. The button will change this though. There's a special mode for the decay stage which outputs the decay stage minus the sustain level, removing the DC offset.
+There is also a per-stage gate output, which does what you'd expect.
 
-Idea: What if I just X-Fade the modulation inputs on transition instead of interpolating? This seem like it would work a lot better, and potentially be computationally cheaper... plus I don't have to try implimenting either a cubic spline or anything fancy, and could just use math::crossfade ¯\\_(ツ)_/¯
+Because with modulation it is quite easy for the output to get to extreme values, the module hard clips the output to ±12V. If you'd like to avoid some of this clipping, the global ring offset knob (to the left of the anger knob) acts as a global attenuator by default. It is done with the offset knob and not the attenutation knob as this makes sense if you treat the global ring input as just having no signal by default, and a ringmod with DC (offset) acts as a VCA.
+
+For some extra fun, there's a track-and-hold-ish section at the bottom of the module under the anger knob, play with it and see what happens
 
 ## Sheliak
 > Sheliak is a semidetached binary system made up of a stellar class B6-8 primary star and a secondary that is probably also a B-type star. The fainter, less massive star in the system was once the more massive member of the pair, which caused it to evolve away from the main sequence first and become a giant star. Because the pair are in a close orbit, as this star expanded into a giant it filled its Roche lobe and transferred most of its mass over to its companion.
 
-Idea: 8 bit A→D→A, but the most significant bit has a different input signal
+Idea: Sustain from that MIT licenced repo
 ## ζ Lyrae
 > Zeta Lyrae is a binary star in the northern constellation of Lyra.
 
-Idea: Sustain from that MIT licenced repo
+It's a blank, but it has 'flip' option in the right click menu
 ## δ1 Lyra
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
 
