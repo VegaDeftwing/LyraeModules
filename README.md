@@ -34,6 +34,8 @@ The main inputs (at the bottom) are normalled. These inputs are multiplied (ring
 > Vega is rotating rapidly with a velocity of 236 km/s at the equator. This causes the equator to bulge outward due to centrifugal effects, and, as a result, there is a variation of temperature across the star's photosphere that reaches a maximum at the poles.
 > This module will spin the segments of an envelope generator at high velocities to help you reach new sonic territory
 
+<img src="./images/Vega.png" alt="Vega ADSR">
+
 Vega is an ADSR with multiple per stage modulation options.
 
 Each stage has a **basic** control section, setting the time (or level, in the case of Sustain) and curve (the smaller knobs), ranging from Logarithmic, to Linear, to Exponential. With only the gate input connected and out+ output connected, Vega behaves as a normal ADSR.

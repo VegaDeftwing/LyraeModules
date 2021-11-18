@@ -843,7 +843,8 @@ struct VegaWidget : ModuleWidget {
         incTime->vega = vega;
 		menu->addChild(incTime);
 
-		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)"));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)\nWHITE: Inverse Enevlope Addition (A,D,R Only)"));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "OUTPUT MODES:\nOFF: Basic Envelope\nBLUE: With Modulation\nGREEN: Basic Env - DC (Decay Only)"));
