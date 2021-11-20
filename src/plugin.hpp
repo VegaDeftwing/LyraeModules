@@ -38,7 +38,7 @@ struct SnappingHexKnob : app::SvgKnob {
         maxAngle = 0.8 * M_PI;
         setSvg(APP->window->loadSvg(asset::plugin(pluginInstance, "res/HexKnob.svg")));
         snap = true;
-        snapValue = 1;
+        //snapValue = 1;
     }
 };
 
