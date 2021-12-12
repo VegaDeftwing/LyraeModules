@@ -32,7 +32,7 @@ struct Sulafat : Module {
 
 	Sulafat() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(KNOB_PARAM, 0.f, 7.f, 0.f, "Mode Selection");
+		configSwitch(KNOB_PARAM, 0.f, 7.f, 0.f, "Mode Selection", {"Bypass","Fold","Quant Fold","Tangent","Half Quant","Ring","S&H-Ish","Wut?"});
 		configParam(PARAM_LFO1, 0.0f, 1.0f, 0.f, "LFO 1 SPEED", "%", 0.f, 100.f);
 		configParam(PARAM_LFO2, 0.0f, 1.0f, 0.05, "LFO 2 SPEED", "%", 0.f, 100.f);
 		configParam(PARAM_FLEFT, 10.0f, 0.0f, 3.f, "Fold Left", "", 0.f, 1.f);

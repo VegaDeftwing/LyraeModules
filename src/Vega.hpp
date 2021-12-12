@@ -135,23 +135,23 @@ struct Vega : Module {
 		configParam(S_PARAM, 0.f, 1.f, 0.5, "Sustain Level");
 		configParam(R_PARAM, 0.9, 1.6, 1.2682, "Release Time");
 		//Output mode buttons
-		configParam(AOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Attack Output Mode");
-		configParam(DOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Decay Output Mode");
-		configParam(SOUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Sustain Output Mode");
-		configParam(ROUTMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Release Output Mode");
+		configButton(AOUTMODEBUTTON_PARAM, "Attack Output Mode");
+		configButton(DOUTMODEBUTTON_PARAM, "Decay Output Mode");
+		configButton(SOUTMODEBUTTON_PARAM, "Sustain Output Mode");
+		configButton(ROUTMODEBUTTON_PARAM, "Release Output Mode");
 		//Modulation mode buttons
-		configParam(ARINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Attack Modulation Mode");
-		configParam(DRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Decay Modulation Mode");
-		configParam(SRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Sustain Modulation Mode");
-		configParam(RRINGMODEBUTTON_PARAM, 0.f, 1.f, 0.f, "Release Modulation Mode");
+		configButton(ARINGMODEBUTTON_PARAM, "Attack Modulation Mode");
+		configButton(DRINGMODEBUTTON_PARAM, "Decay Modulation Mode");
+		configButton(SRINGMODEBUTTON_PARAM, "Sustain Modulation Mode");
+		configButton(RRINGMODEBUTTON_PARAM, "Release Modulation Mode");
 		//A,D,R curve parameters - Decay get's the default set to be linear based on the value of S_PARAM
 		configParam(ACURVE_PARAM, 0.2, 3.f, 1.f, "Attack Curve");
 		configParam<BezierParamQuantity>(DCURVE_PARAM, 0.f, 1.3f, 0.75, "Decay Curve");
 		configParam(RCURVE_PARAM, 0.2, 7.4, 1.f, "Release Curve");
 		//Force advance buttons
-		configParam(AFORCEADV_PARAM, 0.f, 1.f, 0.f, "Attack Force Advance");
-		configParam(DFORCEADV_PARAM, 0.f, 1.f, 0.f, "Decay Force Advance");
-		configParam(SFORCEADV_PARAM, 0.f, 1.f, 0.f, "Sustain Force Advance");
+		configButton(AFORCEADV_PARAM, "Attack Force Advance");
+		configButton(DFORCEADV_PARAM, "Decay Force Advance");
+		configButton(SFORCEADV_PARAM, "Sustain Force Advance");
 		//Global controls - Anger controls X-FADE time. Offset acts as attenuator if no ring input
 		configParam(ANGER_PARAM, 1.f, 0.f, .5, "Transistion Time Control");
 		configParam(GLOBALRINGATT_PARAM, 0.f, 0.2, 0.f, "Gloal Ring Attenuate");

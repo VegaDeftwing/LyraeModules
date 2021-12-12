@@ -36,7 +36,7 @@ struct BD383238 : Module {
 				return nullptr;
 			}
 		}
-		
+		return(nullptr);
 	}
 
 
