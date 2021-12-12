@@ -25,7 +25,7 @@ struct Gamma : Module {
 	Gamma() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(KNOB_PARAM, -10.f, 10.f, 0.f, "bipolar offset/ring attenuversion");
-		configParam(INVERTSWITCH_PARAM, 0.f, 1.f, 0.f, "Invert 2nd Output");
+		configSwitch(INVERTSWITCH_PARAM, 0.f, 1.f, 0.f, "2nd Output", {"Normal","Inverted"});
 	}
 
 	float offset = 0.f;
