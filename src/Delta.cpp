@@ -52,11 +52,11 @@ struct Delta : Module {
 		configParam(R2O_PARAM, 0.f, 1.f, 0.f, "Mid Stage Offset");
 		configParam(R3A_PARAM, 0.f, 1.f, 0.f, "Far Stage Attenuation");
 		configParam(R3O_PARAM, 0.f, 1.f, 0.f, "Far Stage Offset");
-		configParam(MANUALCLOCK_PARAM, 0.f, 1.f, 0.f, "Clock Advance");
-		configParam(RMLGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "Momentary RML");
-		configParam(RMLGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle RML");
-		configParam(LMRGATEMANUAL_PARAM, 0.f, 1.f, 0.f, "Momentar LMR");
-		configParam(LMRGATEHOLD_PARAM, 0.f, 1.f, 0.f, "Toggle LMR");
+		configButton(MANUALCLOCK_PARAM, "Clock Advance");
+		configButton(RMLGATEMANUAL_PARAM, "Momentary RML");
+		configButton(RMLGATEHOLD_PARAM, "Toggle RML");
+		configButton(LMRGATEMANUAL_PARAM, "Momentar LMR");
+		configButton(LMRGATEHOLD_PARAM, "Toggle LMR");
 		configParam(SELECT_PARAM, 0.f, 2.f, 0.f, "Clock Select State");
 		configParam(LMR_PARAM, 0.f, 1.f, 0.f, "LMR State");
 		configParam(RML_PARAM, 0.f, 1.f, 0.f, "RML State");
