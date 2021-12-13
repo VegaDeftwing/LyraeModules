@@ -34,6 +34,8 @@ The main inputs (at the bottom) are normalled. These inputs are multiplied (ring
 > Vega is rotating rapidly with a velocity of 236 km/s at the equator. This causes the equator to bulge outward due to centrifugal effects, and, as a result, there is a variation of temperature across the star's photosphere that reaches a maximum at the poles.
 > This module will spin the segments of an envelope generator at high velocities to help you reach new sonic territory
 
+DEMO: https://www.youtube.com/watch?v=aSt3DRtH8tI
+
 <img src="./images/Vega.png" alt="Vega ADSR" width="220">
 
 Vega is an ADSR with multiple per stage modulation options.
@@ -79,16 +81,15 @@ It's a blank, but it has 'flip' option in the right click menu
 ## δ1 Lyra
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
 
-This module, frankly, is pretty useless.
-The top section is 3 cascaded ring-mod's, that is if you label them from top to bottom as A, B, C the operation is
-Left  = Left * -(A * (B * C))
-Right = Right * (A * (B * C))
-Each stage, A, B, C has it's own attenuator (left) and offset (right).
-If you would like to bypass this stage (other than inverting the left signal), just set all the offset knobs to their max value. **if you do not set the offset high or provide input for each of the 3 stages you will not get any output!**
+DEMO: https://www.youtube.com/watch?v=FvsLZEobSp0
 
-Next, is the phase-selected ring mod section. The upper, middle input is the phase input. at -5V the left input is used, at 0V the middle, and at +5V the right. Values between this will be a crossfade between two inputs. For example, at +2.5V the signal used will be the sum of half of the middle input and half of the right input. The LED on the upper left will show what output mix is being used by using full RED for the left input, GREEN for the middle input, and BLUE for the right input. Crossfade'd states will show a mix of RED and GREEN (Yellow) or GREEN and BLUE (Teelish). If no phase input is connected or if the module is set to "CLOCK MODE" in the right click menu, then the button will advance the stage directly, no smoothing will be applied.
+This module, frankly, is pretty useless. The top section is 3 cascaded ring-mod's, that is if you label them from top to bottom as A, B, C the operation is Left = Left * -(A * (B * C)) Right = Right * (A * (B * C)) Each stage, A, B, C has it's own attenuator (left) and offset (right). If you would like to bypass this stage (other than inverting the left signal), just set all the offset knobs to their max value. if you do not set the offset high or provide input for each of the 3 stages you will not get any output!
 
-Finally, in the last section, the two inputs are actually **gate** inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right. 
+Next, is the clock-selected ring mod section. The upper, middle input is the clock input. The LED on the upper left will show what output is being used- RED for the left input, GREEN for the middle input, and BLUE for the right input.
+
+Finally, in the last section, the two inputs are actually gate inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right.
+
+It's pretty easy to get a really high output from this module, or to just get awful sounds. So, watch your levels and probably use a clipping VCA like ZZC's used here, and try to keep input content harmonically related. Octaves tend to work well.
 
 
 ## ε Lyrae
