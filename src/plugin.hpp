@@ -11,7 +11,7 @@ extern Model* modelGamma;
 extern Model* modelDelta;
 extern Model* modelVega;
 extern Model* modelBD383238;
-extern Model* modelZeta;
+//extern Model* modelZeta;
 
 // Declare each Model, defined in each module source file
 // extern Model* modelMyModule;
