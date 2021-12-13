@@ -3,7 +3,8 @@
 ## Sulafat
 > Sulafat has exhausted the supply of hydrogen at its core, and so burns much brighter.
 > Sulafat is a wavefolder, and so will make your sound much brighter too!
-<img src="./images/Sulafat.png" alt="alt text" width="30">
+
+<img src="./images/Sulafat.png" alt="alt text" width="300">
 
 Sulafat is a multi-mode wavefolder (and a bit more) with some internal modulation that differs between the two channels, with internal normalizing of the left (top) input to the right (bottom) input
 
@@ -24,9 +25,9 @@ The left (top) output will be a basic LFO, while the bottom (right) output will 
 > It bore the traditional names Sulafat (Sulaphat), from the Arabic السلحفاة al-sulḥafāt "turtle" 
 > This module will put a DC offset shell around your signal
 
-<img src="./images/Gamma.png" alt="alt text" width="30">
+<img src="./images/Gamma.png" alt="alt text" width="300">
 
-Gamma Lyrae is a companion module to Sulafat. With nothing connected, the middle knob will generate two DC voltage, with one being the inverse of the other. The knob can be turned both ways to swap which side is going negative. If a CV input is provided, the knob becomes an attenuverter, but the operation is still effectively the same.
+Gamma Lyrae is a companion module to Sulafat. With nothing connected, the middle knob will generate two DC voltages, with one being the inverse of the other. The knob can be turned both ways to swap which side is going negative. If a CV input is provided, the knob becomes an attenuverter, but the operation is still effectively the same.
 
 The main inputs (at the bottom) are normalled. These inputs are multiplied (ring modulated) with the center input. This creates two output signals with opposite DC offsets. This will strongly impact the signal fed into the wavofolding modes of Sulafat.
 
@@ -49,13 +50,13 @@ Things are made interesting with the **mod + adv** controls. The controls in ord
 * Advance trigger input
 * Manual advance trigger
 
-This section offers 4 modes: Ring, Add, Attack-Enveloped addition, and Decay-Enveloped addition.
+This section offers 4 modes: Ring, Add, Self-Enveloped, and Inverse Ring
 * Ring will apply a basic multiplication between the input signal and the respective envelope segment. This has the downside of the 'peak' of the attack causing a very strong modulation, which may transition awkwardly, even with interpolation.
+  
   > Note, technically the full math is [(ring_input * attenuverter) * envelope_stage **+ enevelope_stage**] this addition is done so that the ring modulation is still centered around the evelope stage
 * Addition will do a basic addition (unity sum) of the input signal and the respective envelope segment. This keeps the level of modulation constant, but may mean that the start of the attack stage and end of the release stage can have gaps or extra bumps.
-* Attack-Enveloped Addition will cause the input signal to be the same as the ring modulated input, until the stage's signal goes over 1V. This gives a gental fade in of the modulation, without making it overtake the signal - **only available on the attack stage**
-* Decay-Enveloped Addition will cause the signal to be the simple sum of the two signals until the stage is only 1V above the next stage's level (sustain level or 0v on release) where instead the signal will be the ring-modulated signal, allowing for a cleaner fade to the next stage - **only available in the decay and release stages**
-  * if there is no ring input on the sustain stage, the decay stage will fade to being multiplied by 0 instead of fading to being multiplied by the sustain level. This is provide a smooth transition if the sustain stage has no modulation
+* Self-Enveloped Addition will cause the input signal to be the same as the ring modulated input for the first 20% of the stage. This gives a gental fade in of the modulation, without making it overtake the signal
+* Inverse Ring multiplies the modulation signal with the inverse, offset envelope. This can be used to, for example, make the modulation very strong at the start of the attack stage but 0 at the peak.
 
 There is also a global ring input. This will **only** function in multiplication (basic ring modulation) mode and is done **post** all the other modulation.
 
@@ -70,18 +71,21 @@ Because with modulation it is quite easy for the output to get to extreme values
 
 For some extra fun, there's a track-and-hold-ish section at the bottom of the module under the anger knob, play with it and see what happens
 
-## Sheliak
+## Sheliak - TODO
 > Sheliak is a semidetached binary system made up of a stellar class B6-8 primary star and a secondary that is probably also a B-type star. The fainter, less massive star in the system was once the more massive member of the pair, which caused it to evolve away from the main sequence first and become a giant star. Because the pair are in a close orbit, as this star expanded into a giant it filled its Roche lobe and transferred most of its mass over to its companion.
 
 Idea: Sustain from that MIT licenced repo
-## ζ Lyrae
+## ζ Lyrae - TODO
 > Zeta Lyrae is a binary star in the northern constellation of Lyra.
 
 It's a blank, but it has 'flip' option in the right click menu
 ## δ1 Lyra
+
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
 
 DEMO: https://www.youtube.com/watch?v=FvsLZEobSp0
+
+<img src="./images/Delta1.png" alt="alt text" width="90">
 
 This module, frankly, is pretty useless. The top section is 3 cascaded ring-mod's, that is if you label them from top to bottom as A, B, C the operation is Left = Left * -(A * (B * C)) Right = Right * (A * (B * C)) Each stage, A, B, C has it's own attenuator (left) and offset (right). If you would like to bypass this stage (other than inverting the left signal), just set all the offset knobs to their max value. if you do not set the offset high or provide input for each of the 3 stages you will not get any output!
 
@@ -92,7 +96,7 @@ Finally, in the last section, the two inputs are actually gate inputs and toggle
 It's pretty easy to get a really high output from this module, or to just get awful sounds. So, watch your levels and probably use a clipping VCA like ZZC's used here, and try to keep input content harmonically related. Octaves tend to work well.
 
 
-## ε Lyrae
+## ε Lyrae - TODO
 > Epsilon Lyrae (ε Lyr, ε Lyrae), also known as the Double Double, is a multiple star system of at least five stars
 
 Idea: Disaster Transport Sr clone. It definitely needs filtering, shorter delay can be brighter. Stereo, slightly different delay times
