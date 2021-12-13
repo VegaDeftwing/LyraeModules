@@ -66,7 +66,7 @@ struct GammaWidget : ModuleWidget {
 		addChild(createWidget<Bolt>(Vec(box.size.x - 2 * RACK_GRID_WIDTH + 5, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createParamCentered<HexKnob>(mm2px(Vec(5.08, 69.693)), module, Gamma::KNOB_PARAM));
-		addParam(createParamCentered<NKK>(mm2px(Vec(5.191, 116.946)), module, Gamma::INVERTSWITCH_PARAM));
+		addParam(createParamCentered<CKSS>(mm2px(Vec(5.191, 116.946)), module, Gamma::INVERTSWITCH_PARAM));
 
 		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 56.943)), module, Gamma::OFFSET_INPUT));
 		addInput(createInputCentered<InJack>(mm2px(Vec(5.08, 96.016)), module, Gamma::LEFT_INPUT));
