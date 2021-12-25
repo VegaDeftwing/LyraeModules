@@ -29,6 +29,14 @@ struct Sulafat : Module {
 
 	dsp::ClockDivider processDivider;
 	dsp::RCFilter lowpassFilter;
+	static constexpr int oversample = 4;
+	static constexpr int quality = 4;
+	float bufferL[oversample];
+	float bufferR[oversample];
+	rack::dsp::Upsampler<oversample, quality> upsamplerL;
+	rack::dsp::Decimator<oversample, quality> decimatorL;
+	rack::dsp::Upsampler<oversample, quality> upsamplerR;
+	rack::dsp::Decimator<oversample, quality> decimatorR;
 
 	Sulafat() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -49,6 +57,7 @@ struct Sulafat : Module {
 	float foldr = 0.f;
 
 	void process(const ProcessArgs& args) override {
+
 		// Generate Interal LFOs
 		lfo1speed = params[PARAM_LFO1].getValue();
 		lfo2speed = params[PARAM_LFO2].getValue();
@@ -78,27 +87,76 @@ struct Sulafat : Module {
 			}
 			break;
 		case 1: //Wavefolder with DC offset modulation
-			outputs[LEFT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine2*.15),foldl) * 1.66);
+			upsamplerL.process(inputs[LEFT_INPUT].getVoltage()+(sine2*.15), bufferL);
+			for (size_t i = 0; i < oversample; i++)
+			{
+				bufferL[i] = simd::fmod(bufferL[i],foldr) * 1.66;
+			}
+			outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[RIGHT_INPUT].getVoltage()+(sine1*.15),foldr) * 1.66);
+				upsamplerR.process(inputs[RIGHT_INPUT].getVoltage()+(sine1*.15), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = simd::fmod(bufferR[i],foldr) * 1.66;
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			} else{
-				outputs[RIGHT_OUTPUT].setVoltage(simd::fmod(inputs[LEFT_INPUT].getVoltage()+(sine1*.15),foldr) * 1.51);
+				upsamplerR.process(inputs[LEFT_INPUT].getVoltage()+(sine1*.15), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = simd::fmod(bufferR[i],foldr) * 1.51;
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			}
 			break;
 		case 2: //Direct modulo, with modulation. This Basically does a S&H effect on top of the wave folder
-			outputs[LEFT_OUTPUT].setVoltage((float)((int)(inputs[LEFT_INPUT].getVoltage()+(sine1*.25)+(sine2*.35)) % (int)foldl) * 2.5);
+			upsamplerL.process(inputs[LEFT_INPUT].getVoltage()+(sine1*.25)+(sine2*.35), bufferL);
+			for (size_t i = 0; i < oversample; i++)
+			{
+				bufferL[i] = (float)((int)bufferL[i] % (int)foldr * 2.5);
+			}
+			outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+
+
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[RIGHT_OUTPUT].setVoltage(((int)(inputs[RIGHT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25)) % (int)foldr) * 2.5);
+				upsamplerR.process(inputs[RIGHT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			} else{
-				outputs[RIGHT_OUTPUT].setVoltage(((int)(inputs[LEFT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25)) % (int)foldr) * 2.5);
+				upsamplerR.process(inputs[LEFT_INPUT].getVoltage()+(sine1*.35)+(sine2*.25), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			}
 			break;
 		case 3: //Tangent + clamping = Wavefolding? Again?
-			outputs[LEFT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1*.15) )),-5.f,5.f));
+
+			upsamplerL.process(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1*.15), bufferL);
+			for (size_t i = 0; i < oversample; i++)
+			{
+				bufferL[i] = simd::clamp((simd::tan(bufferL[i])),-5.f,5.f);
+			}
+			outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+
 			if (inputs[RIGHT_INPUT].isConnected()){
-				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
+				upsamplerR.process(.25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2*.15), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = simd::clamp((simd::tan(bufferR[i])),-5.f,5.f);
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			} else{
-				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp((simd::tan(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2*.15) )),-5.f,5.f));
+				upsamplerR.process(.25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2*.15), bufferR);
+				for (size_t i = 0; i < oversample; i++)
+				{
+					bufferR[i] = simd::clamp((simd::tan(bufferR[i])),-5.f,5.f);
+				}
+				outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
 			}
 			break;
 		case 4: // Combine modes 1 & 2 on each half of the wave, filter mode 2 a bit to keep it from dominating the output
@@ -135,7 +193,7 @@ struct Sulafat : Module {
 			}
 			break;
 			
-		case 5: // Simple Ring-Mod + modulation, if no right input, use LFOs
+		case 5: // Simple Ring-Mod + modulation, if no right input, use LFOs - no anti-aliasing needed
 			if (inputs[RIGHT_INPUT].isConnected()){
 				outputs[LEFT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage() * (inputs[RIGHT_INPUT].getVoltage() -5.f + (sine1*.35)-(sine2*.25)),-5.f,5.f));
 				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[RIGHT_INPUT].getVoltage() * (inputs[LEFT_INPUT].getVoltage() -5.f + (sine1*.25)-(sine2*.35)) ,-5.f,5.f));
@@ -145,30 +203,30 @@ struct Sulafat : Module {
 			}
 			break;
 			
-		case 6: // This is very stupid, but it's fun.
+		case 6: // This is very stupid, but it's fun. This one is intentionally not anti-aliased because it's supposed to be weird and glitchy.
 
 			if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())){
-				outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+				outputs[LEFT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage(),-5.f,5.f));
 			}
 
 			if (inputs[RIGHT_INPUT].isConnected()){
 				if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())){
-					outputs[RIGHT_OUTPUT].setVoltage(inputs[RIGHT_INPUT].getVoltage());
+					outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[RIGHT_INPUT].getVoltage(),-5.f,5.f));
 				}
 			} else{
 				//This was isEven until 1.0.2, but I discovered that made it just pass the input directly. Oops.
 				if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())){
-					outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+					outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage(),-5.f,5.f));
 				}
 			}
 			break;
 
 		case 7: //Ringmod w/ LFOs but also just do the raw output with isOdd, this gives a really weird output
-				outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage() * (sine2*.35)+(sine1*.75));
-				outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage() * (-sine1*.75)+(sine2*.35));
+				outputs[LEFT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage() * (sine2*.35)+(sine1*.75),-5.f,5.f));
+				outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage() * (-sine1*.75)+(sine2*.35),-5.f,5.f));
 				if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())){
-					outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
-					outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+					outputs[LEFT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage(),-5.f,5.f));
+					outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(inputs[LEFT_INPUT].getVoltage(),-5.f,5.f));
 				}
 
 			break;

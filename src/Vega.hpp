@@ -199,15 +199,15 @@ struct Vega : Module {
 	dsp::SchmittTrigger DMDetect;
 	dsp::SchmittTrigger SMDetect;
 	dsp::SchmittTrigger RMDetect;
-	//Alt mode in R-Click menu to switch the negitive output from -output to env
+	//Alt mode in R-Click menu to switch the negative output from -output to env
 	//TODO
-	bool outputAlt = false; //Use negitive output as dry
+	bool outputAlt = false; //Use negative output as dry
 	//Alt mode in R-Click menu to switch the release gate output to an EOR trigger
 	//TODO - not yet implimented
-	bool outputEOR = false; //Use negitive output as dry
+	bool outputEOR = false; //Use negative output as dry
 	//Alt mode in R-Click menu to switch the per-stage gate outputs to triggers
 	//TODO - not yet implimented
-	bool outputTriggers = false; //Use negitive output as dry
+	bool outputTriggers = false; //Use negative output as dry
 	//This holds the sustain level as it's used a lot, running getValue() a lot is inefficient and hard to read
 	float sus = 0.75;
 	//Oscilator for S&H
@@ -823,7 +823,7 @@ struct VegaWidget : ModuleWidget {
         };
 
 		menu->addChild(new MenuEntry);
-		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negitive Out Dry");
+		VegaOutputAltItem *altOutput = createMenuItem<VegaOutputAltItem>("Negative Out Dry");
         altOutput->vega = vega;
 		menu->addChild(altOutput);
 
@@ -843,7 +843,7 @@ struct VegaWidget : ModuleWidget {
         incTime->vega = vega;
 		menu->addChild(incTime);
 
-		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)\nWHITE: Inverse Enevlope Addition (A,D,R Only)"));
+		menu->addChild(construct<MenuLabel>(&MenuLabel::text, "MODULATION MODES:\nRED: Ring\nGREEN: Add\nBLUE: Add With Fade (A,D,R Only)\nWHITE: Inverse Envelope Addition (A,D,R Only)"));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
 		menu->addChild(construct<MenuLabel>(&MenuLabel::text, ""));
