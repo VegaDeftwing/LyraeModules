@@ -1,7 +1,7 @@
 {
   "slug": "LyraeModules",
   "name": "LyraeModules",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "license": "GPL-3.0-or-later",
   "brand": "LyraeModules",
   "author": "Vega Deftwing",
@@ -49,6 +49,14 @@
       "description": "Expander for Vega ADSR",
       "tags": [
         "Expander"
+      ]
+    },
+    {
+      "slug": "Zeta",
+      "name": "Zeta",
+      "description": "Fancy Blank",
+      "tags": [
+        "Blank"
       ]
     }
   ]

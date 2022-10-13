@@ -99,6 +99,10 @@
         "ios": "cpp",
         "locale": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "slist": "cpp",
+        "ranges": "cpp",
+        "__std_stream": "cpp",
+        "format": "cpp"
     }
 }
