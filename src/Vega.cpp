@@ -40,6 +40,7 @@ struct Vega : Module {
     SRINGMODE_PARAM,
     RRINGMODE_PARAM,
     OUTPUTALT_PARAM,
+    OUTPUTEOR_PARAM,
     NUM_PARAMS
   };
   enum InputIds {
@@ -184,7 +185,7 @@ struct Vega : Module {
     configParam(OUTPUTALT_PARAM, 0.f, 3.f, 0.f, "Dry output on negative");
   }
 
-  enum Stage { Attack, Decay, Sustain, Release };
+  enum Stage { Attack, Decay, Sustain, Release, Finished };
 
   Stage current_stage = Attack;
   // If the envelope is still running
@@ -213,16 +214,8 @@ struct Vega : Module {
   dsp::SchmittTrigger DMDetect;
   dsp::SchmittTrigger SMDetect;
   dsp::SchmittTrigger RMDetect;
-
-  // Alt mode in right click menu to switch the negative output from -output to
-  // env (dry, no modulation). This is, and sholud only be, used in the code for
-  // the menu handling.
-  bool menu_use_alt_output = false;
-
-  // Alt mode in R-Click menu to switch the release gate output to an EOR
-  // trigger
-  // TODO - not yet implimented
-  bool menu_release_gate_is_eor = false;
+  // EOR trigger
+  dsp::SchmittTrigger EORDetect;
 
   // Alt mode in R-Click menu to switch the per-stage gate outputs to triggers
   // TODO - not yet implimented
@@ -237,14 +230,20 @@ struct Vega : Module {
   float sampleSquare = 0.f;
 
   void displayActive(Stage lstage) {
-    lights[AGATE_LIGHT + 0].setBrightness(lstage == 0 ? 1.f : 0.f);
-    lights[DGATE_LIGHT + 0].setBrightness(lstage == 1 ? 1.f : 0.f);
-    lights[SGATE_LIGHT + 0].setBrightness(lstage == 2 ? 1.f : 0.f);
-    lights[RGATE_LIGHT + 0].setBrightness(lstage == 3 ? 1.f : 0.f);
-    outputs[ATTACK_GATE_OUTPUT].setVoltage(lstage == 0 ? 10.f : 0.f);
-    outputs[DECAY_GATE_OUTPUT].setVoltage(lstage == 1 ? 10.f : 0.f);
-    outputs[SUSTAIN_GATE_OUTPUT].setVoltage(lstage == 2 ? 10.f : 0.f);
-    outputs[RELEASE_GATE_OUTPUT].setVoltage(lstage == 3 ? 10.f : 0.f);
+    lights[AGATE_LIGHT + 0].setBrightness(lstage == Attack ? 1.f : 0.f);
+    lights[DGATE_LIGHT + 0].setBrightness(lstage == Decay ? 1.f : 0.f);
+    lights[SGATE_LIGHT + 0].setBrightness(lstage == Sustain ? 1.f : 0.f);
+    lights[RGATE_LIGHT + 0].setBrightness(lstage == Release ? 1.f : 0.f);
+    outputs[ATTACK_GATE_OUTPUT].setVoltage(lstage == Attack ? 10.f : 0.f);
+    outputs[DECAY_GATE_OUTPUT].setVoltage(lstage == Decay ? 10.f : 0.f);
+    outputs[SUSTAIN_GATE_OUTPUT].setVoltage(lstage == Sustain ? 10.f : 0.f);
+
+    if (params[OUTPUTEOR_PARAM].getValue()) {
+      outputs[RELEASE_GATE_OUTPUT].setVoltage(
+          EORDetect.process(lstage == Finished) ? 10.f : 0.f);
+    } else {
+      outputs[RELEASE_GATE_OUTPUT].setVoltage(lstage == Release ? 10.f : 0.f);
+    }
   }
 
   void forceAdvance(Stage lstage) {
@@ -494,6 +493,10 @@ struct Vega : Module {
   }
 
   void release_stage(float &phasor, float &env, float &anger, Stage &stage) {
+    if (phasor <= 0.f) {
+      return;
+    }
+
     phasor -= simd::pow(
         .000315, params[R_PARAM].getValue() + release_time_from_expander);
     env = simd::pow(
@@ -546,15 +549,6 @@ struct Vega : Module {
         output = modulation * env + env;
         break;
     }
-
-    if (phasor <= 0) {
-      env = 0.f;
-      phasor = 0.f;
-      output = 0.f;
-      outputs[RELEASE_GATE_OUTPUT].setVoltage(0.f);
-      is_running = false;
-    }
-
     perStageOutput(Release, params[ROUTMODE_PARAM].getValue());
   }
 
@@ -742,12 +736,14 @@ struct Vega : Module {
           default:
             break;
         }
-      } else {  // Gate released, phasor == sustain_level already
+      } else if (current_stage != Finished) {
         current_stage = Release;
-      }
-
-      if (current_stage == Release) {
         release_stage(phasor, env, anger, current_stage);
+        if (phasor <= 0.f) {
+          current_stage = Finished;
+        }
+      } else {
+        displayActive(Finished);
       }
 
       // Output, this first if controls the s&h and the TRACK_PARAM the
@@ -935,7 +931,6 @@ struct VegaWidget : ModuleWidget {
       Vega *vega;
 
       void onAction(const event::Action &e) override {
-        vega->menu_use_alt_output = !vega->menu_use_alt_output;
         if (vega->paramQuantities[Vega::OUTPUTALT_PARAM]->getValue() == 1.f) {
           vega->paramQuantities[Vega::OUTPUTALT_PARAM]->setValue(0.f);
         } else {
@@ -952,10 +947,16 @@ struct VegaWidget : ModuleWidget {
       Vega *vega;
 
       void onAction(const event::Action &e) override {
-        vega->menu_release_gate_is_eor = !vega->menu_release_gate_is_eor;
+        if (vega->paramQuantities[Vega::OUTPUTEOR_PARAM]->getValue() == 1.f) {
+          vega->paramQuantities[Vega::OUTPUTEOR_PARAM]->setValue(0.f);
+        } else {
+          vega->paramQuantities[Vega::OUTPUTEOR_PARAM]->setValue(1.f);
+        }
       }
+
       void step() override {
-        rightText = CHECKMARK(vega->menu_release_gate_is_eor);
+        rightText = CHECKMARK(
+            vega->paramQuantities[Vega::OUTPUTEOR_PARAM]->getValue() == 1.f);
       }
     };
 
@@ -1003,9 +1004,10 @@ struct VegaWidget : ModuleWidget {
     altOutput->vega = vega;
     menu->addChild(altOutput);
 
-    // VegaOutputEORItem *eorOutput =
-    // createMenuItem<VegaOutputEORItem>("Release Gate → EOR Trig");
-    // eorOutput->vega = vega; menu->addChild(eorOutput);
+    VegaOutputEORItem *eorOutput =
+        createMenuItem<VegaOutputEORItem>("Release Gate → EOR Trig");
+    eorOutput->vega = vega;
+    menu->addChild(eorOutput);
 
     // VegaOutputTriggersItem *triggersOutput =
     // createMenuItem<VegaOutputTriggersItem>("Stage Gates to Trigs");
