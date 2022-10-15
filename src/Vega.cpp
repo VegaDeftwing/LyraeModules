@@ -742,11 +742,6 @@ struct Vega : Module {
           default:
             break;
         }
-      } else if (current_stage != Sustain) {
-        // If the sustain stage never happened, due to a long decay force it to
-        // release.
-        phasor = sustain_level;
-        current_stage = Release;
       } else {  // Gate released, phasor == sustain_level already
         current_stage = Release;
       }
