@@ -103,6 +103,7 @@
         "slist": "cpp",
         "ranges": "cpp",
         "__std_stream": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "*.ipp": "cpp"
     }
 }
