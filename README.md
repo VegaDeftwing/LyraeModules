@@ -72,6 +72,9 @@ Because with modulation it is quite easy for the output to get to extreme values
 For some extra fun, there's a track-and-hold-ish section at the bottom of the module under the anger knob, play with it and see what happens
 
 ## Sheliak
+
+<img src="./images/Sheliak.png" alt="Sheliak LFSR" width="220">
+
 > Sheliak is a semidetached binary system made up of a stellar class B6-8 primary star and a secondary that is probably also a B-type star. The fainter, less massive star in the system was once the more massive member of the pair, which caused it to evolve away from the main sequence first and become a giant star. Because the pair are in a close orbit, as this star expanded into a giant it filled its Roche lobe and transferred most of its mass over to its companion.
 
 Sheliak is an analog shift register with some extra tricks. It sholud be fed a x4 (or x8, x12, x16, etc.) clock (and, optionally, reset) and some data, just like any other shift register. The top data input is the main input, the bottom data input will be XOR'd with it so that it can be used for LFSR pseudo-random patterns via self patching. The left 8 outputs are the main outputs and will be shifted every 4th clock pulse. 
@@ -95,7 +98,10 @@ Output operations, from top to bottom:
 7. IF the first gate output AND the first triplet gate output are high, update to be the Σ1-4 + Σ1t-3t
 8. Σ1t-3t
 
-## ζ Lyrae - TODO
+## ζ Lyrae
+
+<img src="./images/Zeta.png" alt="Zeta Blank" width="660">
+
 > Zeta Lyrae is a binary star in the northern constellation of Lyra.
 
 It's a blank, but it has 'flip' option in the right click menu. Entire panel renders as a light.
