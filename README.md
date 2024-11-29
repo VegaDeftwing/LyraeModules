@@ -84,14 +84,16 @@ Beta Lyrae is the same star as Sheliak, just a different name.
 
 This module is an expander. It provides 8 outputs which are derived from the gates produced by Sheliak and the attenuators it provides.
 
-Output 1: Σ1-8
-Output 2: Σ1-4
-Output 3: Σ5-8 + perfect fifth (7/12 volt)
-Output 4: Σ3-6 + 2 octaves (2 volts)
-Output 5: (Σ1-4 % 1V) - 1V (Contrained to the same octave then down 1 octave)
-Output 6: Σ1-8 PLUS 1 octave per triplet output that is high MINUS 2 octaves
-Output 7: IF the first gate output AND the first triplet gate output are high, update to be the Σ1-4 + Σ1t-3t
-Output 8: Σ1t-3t
+Output operations, from top to bottom:
+
+1. Σ1-8
+2. Σ1-4
+3. Σ5-8 + perfect fifth (7/12 volt)
+4. Σ3-6 + 2 octaves (2 volts)
+5. (Σ1-4 % 1V) - 1V (Contrained to the same octave then down 1 octave)
+6. Σ1-8 PLUS 1 octave per triplet output that is high MINUS 2 octaves
+7. IF the first gate output AND the first triplet gate output are high, update to be the Σ1-4 + Σ1t-3t
+8. Σ1t-3t
 
 ## ζ Lyrae - TODO
 > Zeta Lyrae is a binary star in the northern constellation of Lyra.
