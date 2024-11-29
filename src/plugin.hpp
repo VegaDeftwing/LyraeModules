@@ -4,19 +4,23 @@
 using namespace rack;
 
 // Declare the Plugin, defined in plugin.cpp
-extern Plugin* pluginInstance;
-extern Model* modelSulafat;
-extern Model* modelGamma;
-extern Model* modelDelta;
-extern Model* modelVega;
-extern Model* modelBD383238;
-extern Model* modelZeta;
+extern Plugin *pluginInstance;
+extern Model *modelSulafat;
+extern Model *modelGamma;
+extern Model *modelDelta;
+extern Model *modelVega;
+extern Model *modelBD383238;
+extern Model *modelZeta;
+extern Model *modelSheliak;
+extern Model *modelBeta;
 
 // Declare each Model, defined in each module source file
 // extern Model* modelMyModule;
 
-struct Bolt : SvgScrew {
-  Bolt() {
+struct Bolt : SvgScrew
+{
+  Bolt()
+  {
     sw->svg =
         APP->window->loadSvg(asset::plugin(pluginInstance, "res/Bolt.svg"));
     sw->wrap();
@@ -24,8 +28,10 @@ struct Bolt : SvgScrew {
   }
 };
 
-struct HexKnob : app::SvgKnob {
-  HexKnob() {
+struct HexKnob : app::SvgKnob
+{
+  HexKnob()
+  {
     minAngle = -0.8 * M_PI;
     maxAngle = 0.8 * M_PI;
     setSvg(
@@ -33,8 +39,10 @@ struct HexKnob : app::SvgKnob {
   }
 };
 
-struct SnappingHexKnob : app::SvgKnob {
-  SnappingHexKnob() {
+struct SnappingHexKnob : app::SvgKnob
+{
+  SnappingHexKnob()
+  {
     minAngle = -0.8 * M_PI;
     maxAngle = 0.8 * M_PI;
     setSvg(
@@ -44,8 +52,10 @@ struct SnappingHexKnob : app::SvgKnob {
   }
 };
 
-struct SmallHexKnob : app::SvgKnob {
-  SmallHexKnob() {
+struct SmallHexKnob : app::SvgKnob
+{
+  SmallHexKnob()
+  {
     minAngle = -0.8 * M_PI;
     maxAngle = 0.8 * M_PI;
     setSvg(APP->window->loadSvg(
@@ -53,8 +63,10 @@ struct SmallHexKnob : app::SvgKnob {
   }
 };
 
-struct SmallHexKnobInv : app::SvgKnob {
-  SmallHexKnobInv() {
+struct SmallHexKnobInv : app::SvgKnob
+{
+  SmallHexKnobInv()
+  {
     minAngle = -0.8 * M_PI;
     maxAngle = 0.8 * M_PI;
     setSvg(APP->window->loadSvg(
@@ -62,8 +74,10 @@ struct SmallHexKnobInv : app::SvgKnob {
   }
 };
 
-struct MedHexKnob : app::SvgKnob {
-  MedHexKnob() {
+struct MedHexKnob : app::SvgKnob
+{
+  MedHexKnob()
+  {
     minAngle = -0.8 * M_PI;
     maxAngle = 0.8 * M_PI;
     setSvg(APP->window->loadSvg(
@@ -71,10 +85,12 @@ struct MedHexKnob : app::SvgKnob {
   }
 };
 
-struct InJack : app::SvgPort {
-  widget::TransformWidget* tw;
+struct InJack : app::SvgPort
+{
+  widget::TransformWidget *tw;
 
-  InJack() {
+  InJack()
+  {
     // remove the widget from the frame buffer
     fb->removeChild(sw);
     // make a new Transform Widget
@@ -105,10 +121,12 @@ struct InJack : app::SvgPort {
   }
 };
 
-struct OutJack : app::SvgPort {
-  widget::TransformWidget* tw;
+struct OutJack : app::SvgPort
+{
+  widget::TransformWidget *tw;
 
-  OutJack() {
+  OutJack()
+  {
     // see above comments to understand this
     fb->removeChild(sw);
     tw = new TransformWidget();

@@ -1,7 +1,9 @@
 #include "plugin.hpp"
 
-struct Vega : Module {
-  enum ParamIds {
+struct Vega : Module
+{
+  enum ParamIds
+  {
     // Do Net Reorder these
     ATTACK_FORCE_ADV_PARAM,
     DECAY_FORCE_ADV_PARAM,
@@ -43,7 +45,8 @@ struct Vega : Module {
     OUTPUT_EOR_PARAM,
     NUM_PARAMS
   };
-  enum InputIds {
+  enum InputIds
+  {
     // Do not reorder these!
     ATTACK_ADV_INPUT,
     DECALY_ADV_INPUT,
@@ -59,7 +62,8 @@ struct Vega : Module {
     ANGER_INPUT,
     NUM_INPUTS
   };
-  enum OutputIds {
+  enum OutputIds
+  {
     // Do not reorder these!
     ATTACK_OUTPUT,
     DECAY_OUTPUT,
@@ -73,7 +77,8 @@ struct Vega : Module {
     MAIN_NEGATIVE_OUTPUT,
     NUM_OUTPUTS
   };
-  enum LightIds {
+  enum LightIds
+  {
     ENUMS(AMODE_LIGHT, 3),
     ENUMS(DMODE_LIGHT, 3),
     ENUMS(SMODE_LIGHT, 3),
@@ -90,21 +95,29 @@ struct Vega : Module {
   // This, along with the mess in the process divider which updates lastValue,
   // makes it so that each knob will 'inherit' the default value of the knob
   // above it this makes setting equal amounts of attenuation easier.
-  struct ChainParamQuantity : ParamQuantity {
-    float getDefaultValue() override {
-      if (paramId <= 0) return 0.f;
-      if (!module) return 0.f;
+  struct ChainParamQuantity : ParamQuantity
+  {
+    float getDefaultValue() override
+    {
+      if (paramId <= 0)
+        return 0.f;
+      if (!module)
+        return 0.f;
       return module->params[paramId - 1].getValue();
     }
   };
 
   // This makes the decay curve default value whatever it needs to be to go
   // back to being linear while still leaving the full range.
-  struct BezierParamQuantity : ParamQuantity {
-    float getDefaultValue() override {
+  struct BezierParamQuantity : ParamQuantity
+  {
+    float getDefaultValue() override
+    {
       Vega *vega = dynamic_cast<Vega *>(module);
-      if (paramId <= 0) return 0.f;
-      if (!module) return 0.f;
+      if (paramId <= 0)
+        return 0.f;
+      if (!module)
+        return 0.f;
       return ((1 + vega->sustain_level) / 2);
     }
   };
@@ -119,7 +132,8 @@ struct Vega : Module {
   float decay_curve_from_expander = 0.f;
   float release_curve_from_expander = 0.f;
 
-  Vega() {
+  Vega()
+  {
     processDivider.setDivision(64);
 
     config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
@@ -186,37 +200,79 @@ struct Vega : Module {
     configParam(RELEASE_RING_MODE_PARAM, 0.f, 3.f, 0.f,
                 "Release Modulation Mode");
     configParam(OUTPUT_ALT_PARAM, 0.f, 3.f, 0.f, "Dry output on negative");
+
+    // Naming IO
+    configInput(ATTACK_ADV_INPUT, "Attack Advance Trigger");
+    configInput(DECALY_ADV_INPUT, "Decay Advance Trigger");
+    configInput(SUSTAIN_ADV_INPUT, "Sustain Advance Trigger");
+    configInput(ATTACK_MOD_INPUT, "Attack Modulation");
+    configInput(DECAY_MOD_INPUT, "Decay Modulation");
+    configInput(SUSTAIN_MOD_INPUT, "Sustain Modulation");
+    configInput(RELEASE_MOD_INPUT, "Release Modulation");
+    configInput(GATE_INPUT, "Gate");
+    configInput(GLOBAL_RING_INPUT, "Global Ringmod");
+    configInput(RETRIG_INPUT, "Retrig");
+    configInput(SANDH_INPUT, "S&H");
+    configInput(ANGER_INPUT, "Anger (Transition Time)");
+
+    configOutput(ATTACK_OUTPUT, "Atack Stage");
+    configOutput(DECAY_OUTPUT, "Decay Stage");
+    configOutput(SUSTAIN_OUTPUT, "Sustain Stage");
+    configOutput(RELEASE_OUTPUT, "Release Stage");
+    configOutput(ATTACK_GATE_OUTPUT, "Attack Gate");
+    configOutput(DECAY_GATE_OUTPUT, "Decay Gate");
+    configOutput(SUSTAIN_GATE_OUTPUT, "Sustain Gate");
+    configOutput(RELEASE_GATE_OUTPUT, "Release Gate");
+    configOutput(MAIN_POSITIVE_OUTPUT, "Main +");
+    configOutput(MAIN_NEGATIVE_OUTPUT, "Main -");
   }
 
-  enum Stage { ATTACK, DECAY, SUSTAIN, RELEASE, FINISHED };
+  enum Stage
+  {
+    ATTACK,
+    DECAY,
+    SUSTAIN,
+    RELEASE,
+    FINISHED
+  };
 
   Stage current_stage = ATTACK;
+
   // If the envelope is still running
   bool is_running = false;
+
   // The linear envelope, generated piecewise
   float phasor = 0.f;
+
   // The envelope after curve has been applied
   float env = 0.f;
+
   // The value that will be math'd onto the envelope to get the output
   float modulation = 0.f;
+
   // The modulation gets XFaded between stages depending on the anger knob
   float modulation_source = 0.f;
   float modulation_dest = 0.f;
+
   // The envelope with all the modulation
   float output = 0.f;
+
   // Primary Gate Trigger
   dsp::SchmittTrigger gateDetect;
   dsp::SchmittTrigger retrigDetect;
+
   // Output Mode Triggers
   dsp::SchmittTrigger AOMDetect;
   dsp::SchmittTrigger DOMDetect;
   dsp::SchmittTrigger SOMDetect;
   dsp::SchmittTrigger ROMDetect;
+
   // Modulation Mode Triggers
   dsp::SchmittTrigger AMDetect;
   dsp::SchmittTrigger DMDetect;
   dsp::SchmittTrigger SMDetect;
   dsp::SchmittTrigger RMDetect;
+
   // EOR trigger
   dsp::SchmittTrigger EORDetect;
 
@@ -232,27 +288,34 @@ struct Vega : Module {
   // Oscilator for S&H.
   float sampleSquare = 0.f;
 
-  void displayActive(Stage lstage) {
+  void displayActive(Stage lstage)
+  {
     lights[AGATE_LIGHT + 0].setBrightness(lstage == ATTACK ? 1.f : 0.f);
     lights[DGATE_LIGHT + 0].setBrightness(lstage == DECAY ? 1.f : 0.f);
     lights[SGATE_LIGHT + 0].setBrightness(lstage == SUSTAIN ? 1.f : 0.f);
     lights[RGATE_LIGHT + 0].setBrightness(lstage == RELEASE ? 1.f : 0.f);
   }
 
-  void forceAdvance(Stage lstage) {
-    if (inputs[lstage].isConnected()) {
-      if (inputs[lstage].getVoltage() >= 5.f) {
+  void forceAdvance(Stage lstage)
+  {
+    if (inputs[lstage].isConnected())
+    {
+      if (inputs[lstage].getVoltage() >= 5.f)
+      {
         current_stage = (Stage)((int)lstage + 1);
-        if (lstage == 0) {
+        if (lstage == 0)
+        {
           // if the attack stage is skipped the envelope needs to be set
           // high so the decay stage has something to work with
           phasor = 1;
         }
       }
     }
-    if (params[current_stage].getValue() >= .5f) {
+    if (params[current_stage].getValue() >= .5f)
+    {
       current_stage = (Stage)((int)lstage + 1);
-      if (lstage == 0) {
+      if (lstage == 0)
+      {
         // if the attack stage is skipped the envelope needs to be set high
         // so the decay stage has something to work with
         phasor = 1;
@@ -260,77 +323,94 @@ struct Vega : Module {
     }
   }
 
-  void perStageOutput(Stage stage, int mode) {
+  void perStageOutput(Stage stage, int mode)
+  {
     // accessing output and env as globals. This is probably frowed upon but oh
     // well.
-    if (stage != ATTACK) {
-      if (outputs[stage - 1].isConnected()) {
+    if (stage != ATTACK)
+    {
+      if (outputs[stage - 1].isConnected())
+      {
         outputs[stage - 1].setVoltage(0.f);
       }
     }
-    if (outputs[stage].isConnected()) {
-      if (mode == 0) {  // LED OFF output mode, basic env
+    if (outputs[stage].isConnected())
+    {
+      if (mode == 0)
+      { // LED OFF output mode, basic env
         outputs[stage].setVoltage(10.f * env);
-      } else if (mode == 1) {  // BLUE LED output mode, env w/ modulation
+      }
+      else if (mode == 1)
+      { // BLUE LED output mode, env w/ modulation
         outputs[stage].setVoltage(10.f * output *
                                   params[GLOBAL_RING_OFFSET_PARAM].getValue());
-      } else {  // GREEN LED output mode, env - DC, only available on Decay
+      }
+      else
+      { // GREEN LED output mode, env - DC, only available on Decay
         outputs[stage].setVoltage(10.f * (env - sustain_level));
       }
     }
   }
 
-  void perStageGateOutput(Stage stage) {
+  void perStageGateOutput(Stage stage)
+  {
     outputs[ATTACK_GATE_OUTPUT].setVoltage(stage == ATTACK ? 10.f : 0.f);
     outputs[DECAY_GATE_OUTPUT].setVoltage(stage == DECAY ? 10.f : 0.f);
     outputs[SUSTAIN_GATE_OUTPUT].setVoltage(stage == SUSTAIN ? 10.f : 0.f);
 
-    if (params[OUTPUT_EOR_PARAM].getValue()) {
+    if (params[OUTPUT_EOR_PARAM].getValue())
+    {
       outputs[RELEASE_GATE_OUTPUT].setVoltage(
           EORDetect.process(stage == FINISHED) ? 10.f : 0.f);
-    } else {
+    }
+    else
+    {
       outputs[RELEASE_GATE_OUTPUT].setVoltage(stage == RELEASE ? 10.f : 0.f);
     }
   }
 
-  void setModeLight(Stage lstage, int lmode) {
+  void setModeLight(Stage lstage, int lmode)
+  {
     int offset = (int)lstage * 3;
-    switch (lmode) {
-      case 0:
-        lights[offset + 0].setBrightness(1.f);
-        lights[offset + 1].setBrightness(0.f);
-        lights[offset + 2].setBrightness(0.f);
-        break;
-      case 1:
-        lights[offset + 0].setBrightness(0.f);
-        lights[offset + 1].setBrightness(1.f);
-        lights[offset + 2].setBrightness(0.f);
-        break;
-      case 2:
-        lights[offset + 0].setBrightness(0.f);
-        lights[offset + 1].setBrightness(0.f);
-        lights[offset + 2].setBrightness(1.f);
-        break;
-      case 3:
-        lights[offset + 0].setBrightness(1.f);
-        lights[offset + 1].setBrightness(1.f);
-        lights[offset + 2].setBrightness(1.f);
-        break;
-      default:
-        lights[offset + 0].setBrightness(0.f);
-        lights[offset + 1].setBrightness(0.f);
-        lights[offset + 2].setBrightness(0.f);
-        break;
+    switch (lmode)
+    {
+    case 0:
+      lights[offset + 0].setBrightness(1.f);
+      lights[offset + 1].setBrightness(0.f);
+      lights[offset + 2].setBrightness(0.f);
+      break;
+    case 1:
+      lights[offset + 0].setBrightness(0.f);
+      lights[offset + 1].setBrightness(1.f);
+      lights[offset + 2].setBrightness(0.f);
+      break;
+    case 2:
+      lights[offset + 0].setBrightness(0.f);
+      lights[offset + 1].setBrightness(0.f);
+      lights[offset + 2].setBrightness(1.f);
+      break;
+    case 3:
+      lights[offset + 0].setBrightness(1.f);
+      lights[offset + 1].setBrightness(1.f);
+      lights[offset + 2].setBrightness(1.f);
+      break;
+    default:
+      lights[offset + 0].setBrightness(0.f);
+      lights[offset + 1].setBrightness(0.f);
+      lights[offset + 2].setBrightness(0.f);
+      break;
     }
   }
 
-  void attack_stage(float &phasor, float &env, float &anger, Stage &stage) {
+  void attack_stage(float &phasor, float &env, float &anger, Stage &stage)
+  {
     phasor += simd::pow(.000315, params[ATTACK_TIME_PARAM].getValue() +
                                      attack_time_from_expander);
     env = simd::pow(phasor, params[ATTACK_CURVE_PARAM].getValue() +
                                 attack_curve_from_expander);
 
-    if (phasor > 1.0) {
+    if (phasor > 1.0)
+    {
       stage = DECAY;
     }
 
@@ -342,15 +422,20 @@ struct Vega : Module {
     // think it's 100% necessary that it does work like that, so this is going
     // to stay as is
 
-    if (inputs[ATTACK_MOD_INPUT].isConnected()) {
-      if (inputs[DECAY_MOD_INPUT].isConnected()) {  // Necessary for normalling
+    if (inputs[ATTACK_MOD_INPUT].isConnected())
+    {
+      if (inputs[DECAY_MOD_INPUT].isConnected())
+      { 
+        // Necessary for normalling
         modulation =
             simd::crossfade(inputs[ATTACK_MOD_INPUT].getVoltage() *
                                 params[ATTACK_RING_ATT_PARAM].getValue(),
                             inputs[DECAY_MOD_INPUT].getVoltage() *
                                 params[DECAY_RING_ATT_PARAM].getValue(),
                             (simd::fmax(0, anger * env - anger + 1)));
-      } else {
+      }
+      else
+      {
         modulation =
             simd::crossfade(inputs[ATTACK_MOD_INPUT].getVoltage() *
                                 params[ATTACK_RING_ATT_PARAM].getValue(),
@@ -359,28 +444,34 @@ struct Vega : Module {
                             (simd::fmax(0, anger * env - anger + 1)));
       }
 
-      switch ((int)params[ATTACK_RING_MODE_PARAM].getValue()) {
-        case 0:  // Ring
-          output = modulation * env + env;
-          break;
-        case 1:  // Addition
+      switch ((int)params[ATTACK_RING_MODE_PARAM].getValue())
+      {
+      case 0: // Ring
+        output = modulation * env + env;
+        break;
+      case 1: // Addition
+        output = modulation + env;
+        break;
+      case 2: // Self-Env Addition
+        if (env <= 0.2)
+        { // first 20% of Attack stage
+          output = (modulation * env * 10) + env;
+        }
+        else
+        {
           output = modulation + env;
-          break;
-        case 2:              // Self-Env Addition
-          if (env <= 0.2) {  // first 20% of Attack stage
-            output = (modulation * env * 10) + env;
-          } else {
-            output = modulation + env;
-          }
-          break;
-        case 3:
-          output = ((-env + 1) * modulation) + env;
-          break;
-        default:
-          output = modulation * env + env;
-          break;
+        }
+        break;
+      case 3:
+        output = ((-env + 1) * modulation) + env;
+        break;
+      default:
+        output = modulation * env + env;
+        break;
       }
-    } else {
+    }
+    else
+    {
       modulation = simd::crossfade(0.f,
                                    inputs[DECAY_MOD_INPUT].getVoltage() *
                                        params[DECAY_RING_ATT_PARAM].getValue(),
@@ -391,10 +482,13 @@ struct Vega : Module {
     displayActive(ATTACK);
     perStageOutput(ATTACK, params[ATTACK_OUT_MODE_PARAM].getValue());
     perStageGateOutput(ATTACK);
-    forceAdvance(ATTACK);  // checks if the force advance is true internally
+
+    // checks if the force advance is true internally
+    forceAdvance(ATTACK);
   }
 
-  void decay_stage(float &phasor, float &env, float &anger, Stage &stage) {
+  void decay_stage(float &phasor, float &env, float &anger, Stage &stage)
+  {
     phasor -= simd::pow(.000315, params[DECAY_TIME_PARAM].getValue() +
                                      decay_time_from_expander);
     // using bezier curves (ish) because nothing else wanted to
@@ -402,24 +496,30 @@ struct Vega : Module {
     // control point t is the phasor from 0 to 1
     // p1+(1-t)^2*(p0-p1)+t^2*(p2-p1)
     env = (params[DECAY_CURVE_PARAM].getValue() +
-           decay_curve_from_expander)   // p1
-          + simd::pow((1 - phasor), 2)  //+(1-t)^2
+           decay_curve_from_expander)  // p1
+          + simd::pow((1 - phasor), 2) //+(1-t)^2
                 * (sustain_level - (params[DECAY_CURVE_PARAM].getValue() +
-                                    decay_curve_from_expander))  //*(p0-p1)
-          + simd::pow(phasor, 2)                                 //+t^2
+                                    decay_curve_from_expander)) //*(p0-p1)
+          + simd::pow(phasor, 2)                                //+t^2
                 * (1 - (params[DECAY_CURVE_PARAM].getValue() +
-                        decay_curve_from_expander));  //*(p2-p1)
+                        decay_curve_from_expander)); //*(p2-p1)
 
-    if (phasor <= 0) {
+    if (phasor <= 0)
+    {
       stage = SUSTAIN;
     }
 
     // Normal modulation inputs going down
-    if (inputs[DECAY_MOD_INPUT].isConnected()) {
+    if (inputs[DECAY_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[DECAY_MOD_INPUT].getVoltage();
-    } else if (inputs[ATTACK_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[ATTACK_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[ATTACK_MOD_INPUT].getVoltage();
-    } else {
+    }
+    else
+    {
       modulation_source = 0;
     }
 
@@ -429,52 +529,65 @@ struct Vega : Module {
         modulation_source * params[DECAY_RING_ATT_PARAM].getValue(),
         modulation_dest * params[SUSTAIN_RING_ATT_PARAM].getValue(),
         (simd::fmax(0, anger * (-env) - anger + (1 / (sustain_level + 0.01)))));
+
     //.01 is still not perfect, low sustain vals will still cause
     // issues.
     // but, it makes the range of bad values low enough to just let
     // clamping handle the weird situations.
-    switch ((int)params[DECAY_RING_MODE_PARAM].getValue()) {
-      case 0:  // Ring
-        output = modulation * env + env;
-        break;
-      case 1:  // Addition
+    switch ((int)params[DECAY_RING_MODE_PARAM].getValue())
+    {
+    case 0: // Ring
+      output = modulation * env + env;
+      break;
+    case 1: // Addition
+      output = modulation + env;
+      break;
+    case 2: // Self-Env Addition
+      if ((-env + 1 * (1 / sustain_level)) <=
+          0.2)
+      { // first 20% of decay stage
+        output = (modulation * env * 10) + env;
+      }
+      else
+      {
         output = modulation + env;
-        break;
-      case 2:  // Self-Env Addition
-        if ((-env + 1 * (1 / sustain_level)) <=
-            0.2) {  // first 20% of decay stage
-          output = (modulation * env * 10) + env;
-        } else {
-          output = modulation + env;
-        }
-        break;
-      case 3:
-        output = ((-env + sustain_level) * modulation) + env;
-        break;
-      default:
-        output = modulation * env + env;
-        break;
+      }
+      break;
+    case 3:
+      output = ((-env + sustain_level) * modulation) + env;
+      break;
+    default:
+      output = modulation * env + env;
+      break;
     }
 
     displayActive(DECAY);
     perStageOutput(DECAY, params[DECAY_OUT_MODE_PARAM].getValue());
     perStageGateOutput(DECAY);
-    forceAdvance(DECAY);  // checks if the force advance is true internally
+    forceAdvance(DECAY); // checks if the force advance is true internally
   }
 
-  void sustain_stage(float &phasor, float &env, float &anger, Stage &stage) {
+  void sustain_stage(float &phasor, float &env, float &anger, Stage &stage)
+  {
     env = sustain_level;
     phasor = sustain_level;
 
     // Normal modulation inputs going down, if none connected 0-out
     // the modulation source
-    if (inputs[SUSTAIN_MOD_INPUT].isConnected()) {
+    if (inputs[SUSTAIN_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[SUSTAIN_MOD_INPUT].getVoltage();
-    } else if (inputs[DECAY_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[DECAY_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[DECAY_MOD_INPUT].getVoltage();
-    } else if (inputs[ATTACK_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[ATTACK_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[ATTACK_MOD_INPUT].getVoltage();
-    } else {
+    }
+    else
+    {
       modulation_source = 0;
     }
 
@@ -484,26 +597,29 @@ struct Vega : Module {
     modulation = modulation_source * params[SUSTAIN_RING_ATT_PARAM].getValue();
 
     // Sustain stage has less modes because it's constant
-    switch ((int)params[SUSTAIN_RING_MODE_PARAM].getValue()) {
-      case 0:  // Ring
-        output = modulation * env + env;
-        break;
-      case 1:  // Addition
-        output = modulation + env;
-        break;
-      default:
-        output = modulation * env + env;
-        break;
+    switch ((int)params[SUSTAIN_RING_MODE_PARAM].getValue())
+    {
+    case 0: // Ring
+      output = modulation * env + env;
+      break;
+    case 1: // Addition
+      output = modulation + env;
+      break;
+    default:
+      output = modulation * env + env;
+      break;
     }
 
     displayActive(SUSTAIN);
     perStageOutput(SUSTAIN, params[SUSTAIN_OUT_MODE_PARAM].getValue());
     perStageGateOutput(SUSTAIN);
-    forceAdvance(SUSTAIN);  // checks if the force advance is true internally
+    forceAdvance(SUSTAIN); // checks if the force advance is true internally
   }
 
-  void release_stage(float &phasor, float &env, float &anger, Stage &stage) {
-    if (phasor <= 0.f) {
+  void release_stage(float &phasor, float &env, float &anger, Stage &stage)
+  {
+    if (phasor <= 0.f)
+    {
       return;
     }
 
@@ -515,15 +631,24 @@ struct Vega : Module {
           sustain_level;
 
     // Normal modulation inputs going down
-    if (inputs[RELEASE_MOD_INPUT].isConnected()) {
+    if (inputs[RELEASE_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[RELEASE_MOD_INPUT].getVoltage();
-    } else if (inputs[SUSTAIN_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[SUSTAIN_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[SUSTAIN_MOD_INPUT].getVoltage();
-    } else if (inputs[DECAY_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[DECAY_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[DECAY_MOD_INPUT].getVoltage();
-    } else if (inputs[ATTACK_MOD_INPUT].isConnected()) {
+    }
+    else if (inputs[ATTACK_MOD_INPUT].isConnected())
+    {
       modulation_source = inputs[ATTACK_MOD_INPUT].getVoltage();
-    } else {
+    }
+    else
+    {
       modulation_source = 0;
     }
 
@@ -535,27 +660,31 @@ struct Vega : Module {
         (simd::fmax(0,
                     anger * (-env) - anger + (1 / (sustain_level + 0.0001)))));
 
-    switch ((int)params[RELEASE_RING_MODE_PARAM].getValue()) {
-      case 0:  // Ring
-        output = modulation * env + env;
-        break;
-      case 1:  // Addition
+    switch ((int)params[RELEASE_RING_MODE_PARAM].getValue())
+    {
+    case 0: // Ring
+      output = modulation * env + env;
+      break;
+    case 1: // Addition
+      output = modulation + env;
+      break;
+    case 2: // Self-Env Addition
+      if ((-env + 1 * (1 / sustain_level)) <=
+          0.2)
+      { // first 20% of release stage
+        output = (modulation * env * 10) + env;
+      }
+      else
+      {
         output = modulation + env;
-        break;
-      case 2:  // Self-Env Addition
-        if ((-env + 1 * (1 / sustain_level)) <=
-            0.2) {  // first 20% of release stage
-          output = (modulation * env * 10) + env;
-        } else {
-          output = modulation + env;
-        }
-        break;
-      case 3:
-        output = ((-env + sustain_level) * modulation) + env;
-        break;
-      default:
-        output = modulation * env + env;
-        break;
+      }
+      break;
+    case 3:
+      output = ((-env + sustain_level) * modulation) + env;
+      break;
+    default:
+      output = modulation * env + env;
+      break;
     }
 
     displayActive(RELEASE);
@@ -563,24 +692,26 @@ struct Vega : Module {
     perStageGateOutput(RELEASE);
   }
 
-  void update_lights(void) {
+  void update_lights(void)
+  {
     lights[AGATE_LIGHT + 2].setBrightness(
         params[ATTACK_OUT_MODE_PARAM].getValue() ? 1.f : 0.f);
-    switch ((int)params[DECAY_OUT_MODE_PARAM].getValue()) {
-      case 0:
-        lights[DGATE_LIGHT + 1].setBrightness(0.f);
-        lights[DGATE_LIGHT + 2].setBrightness(0.f);
-        break;
-      case 1:
-        lights[DGATE_LIGHT + 1].setBrightness(0.f);
-        lights[DGATE_LIGHT + 2].setBrightness(1.f);
-        break;
-      case 2:
-        lights[DGATE_LIGHT + 1].setBrightness(1.f);
-        lights[DGATE_LIGHT + 2].setBrightness(0.f);
-        break;
-      default:
-        break;
+    switch ((int)params[DECAY_OUT_MODE_PARAM].getValue())
+    {
+    case 0:
+      lights[DGATE_LIGHT + 1].setBrightness(0.f);
+      lights[DGATE_LIGHT + 2].setBrightness(0.f);
+      break;
+    case 1:
+      lights[DGATE_LIGHT + 1].setBrightness(0.f);
+      lights[DGATE_LIGHT + 2].setBrightness(1.f);
+      break;
+    case 2:
+      lights[DGATE_LIGHT + 1].setBrightness(1.f);
+      lights[DGATE_LIGHT + 2].setBrightness(0.f);
+      break;
+    default:
+      break;
     }
 
     lights[SGATE_LIGHT + 2].setBrightness(
@@ -596,44 +727,54 @@ struct Vega : Module {
 
     // Yes, I realize it's bad style to not put these in a loop but
     // ¯\_(ツ)_/¯
-    if (AOMDetect.process(params[ATTACK_OUT_MODE_BUTTON_PARAM].getValue())) {
+    if (AOMDetect.process(params[ATTACK_OUT_MODE_BUTTON_PARAM].getValue()))
+    {
       params[ATTACK_OUT_MODE_PARAM].setValue(
           ((int)params[ATTACK_OUT_MODE_PARAM].getValue() + 1) % 2);
     }
-    if (DOMDetect.process(params[DECAY_OUT_MODE_BUTTON_PARAM].getValue())) {
+    if (DOMDetect.process(params[DECAY_OUT_MODE_BUTTON_PARAM].getValue()))
+    {
       params[DECAY_OUT_MODE_PARAM].setValue(
           ((int)params[DECAY_OUT_MODE_PARAM].getValue() + 1) % 3);
     }
-    if (SOMDetect.process(params[SUSTAIN_OUT_MODE_BUTTON_PARAM].getValue())) {
+    if (SOMDetect.process(params[SUSTAIN_OUT_MODE_BUTTON_PARAM].getValue()))
+    {
       params[SUSTAIN_OUT_MODE_PARAM].setValue(
           ((int)params[SUSTAIN_OUT_MODE_PARAM].getValue() + 1) % 2);
     }
-    if (ROMDetect.process(params[RELEASE_OUT_MODE_BUTTON_PARAM].getValue())) {
+    if (ROMDetect.process(params[RELEASE_OUT_MODE_BUTTON_PARAM].getValue()))
+    {
       params[RELEASE_OUT_MODE_PARAM].setValue(
           ((int)params[RELEASE_OUT_MODE_PARAM].getValue() + 1) % 2);
     }
 
     // toggle states for Modulation Modes, update mode LED respectively
-    if (AMDetect.process(params[ATTACK_RING_MODE_BUTTON_PARAM].getValue())) {
+    if (AMDetect.process(params[ATTACK_RING_MODE_BUTTON_PARAM].getValue()))
+    {
       params[ATTACK_RING_MODE_PARAM].setValue(
           ((int)params[ATTACK_RING_MODE_PARAM].getValue() + 1) % 4);
     }
-    if (DMDetect.process(params[DECAY_RING_MODE_BUTTON_PARAM].getValue())) {
+    if (DMDetect.process(params[DECAY_RING_MODE_BUTTON_PARAM].getValue()))
+    {
       params[DECAY_RING_MODE_PARAM].setValue(
           ((int)params[DECAY_RING_MODE_PARAM].getValue() + 1) % 4);
     }
-    if (SMDetect.process(params[SUSTAIN_RING_MODE_BUTTON_PARAM].getValue())) {
+    if (SMDetect.process(params[SUSTAIN_RING_MODE_BUTTON_PARAM].getValue()))
+    {
       params[SUSTAIN_RING_MODE_PARAM].setValue(
           ((int)params[SUSTAIN_RING_MODE_PARAM].getValue() + 1) % 2);
     }
-    if (RMDetect.process(params[RELEASE_RING_MODE_BUTTON_PARAM].getValue())) {
+    if (RMDetect.process(params[RELEASE_RING_MODE_BUTTON_PARAM].getValue()))
+    {
       params[RELEASE_RING_MODE_PARAM].setValue(
           ((int)params[RELEASE_RING_MODE_PARAM].getValue() + 1) % 4);
     }
   }
 
-  void ring_active_output(float &output) {
-    if (outputs[MAIN_POSITIVE_OUTPUT].isConnected()) {
+  void ring_active_output(float &output)
+  {
+    if (outputs[MAIN_POSITIVE_OUTPUT].isConnected())
+    {
       outputs[MAIN_POSITIVE_OUTPUT].setVoltage(
           simd::clamp(output * 10.f *
                           (inputs[GLOBAL_RING_INPUT].getVoltage() *
@@ -641,12 +782,16 @@ struct Vega : Module {
                            params[GLOBAL_RING_OFFSET_PARAM].getValue()),
                       -12.0, 12.0));
     }
-    if (outputs[MAIN_NEGATIVE_OUTPUT].isConnected()) {
-      if (params[OUTPUT_ALT_PARAM].getValue()) {
+    if (outputs[MAIN_NEGATIVE_OUTPUT].isConnected())
+    {
+      if (params[OUTPUT_ALT_PARAM].getValue())
+      {
         // Right Click menu option
         outputs[MAIN_NEGATIVE_OUTPUT].setVoltage(
             simd::clamp(env * 10.f, -12.0, 12.0));
-      } else {
+      }
+      else
+      {
         outputs[MAIN_NEGATIVE_OUTPUT].setVoltage(
             simd::clamp(-1.f * output * 10.f *
                             (inputs[GLOBAL_RING_INPUT].getVoltage() *
@@ -657,21 +802,27 @@ struct Vega : Module {
     }
   }
 
-  void plain_output(float &env, float &output) {
+  void plain_output(float &env, float &output)
+  {
     // If no ring input connected, the offset knob works as a
     // volume knob, to add more headroom when necessary
-    if (outputs[MAIN_POSITIVE_OUTPUT].isConnected()) {
+    if (outputs[MAIN_POSITIVE_OUTPUT].isConnected())
+    {
       outputs[MAIN_POSITIVE_OUTPUT].setVoltage(simd::clamp(
           output * (10.f * params[GLOBAL_RING_OFFSET_PARAM].getValue()), -12.0,
           12.0));
     }
 
-    if (outputs[MAIN_NEGATIVE_OUTPUT].isConnected()) {
-      if (params[OUTPUT_ALT_PARAM].getValue()) {
+    if (outputs[MAIN_NEGATIVE_OUTPUT].isConnected())
+    {
+      if (params[OUTPUT_ALT_PARAM].getValue())
+      {
         // Right click menu option
         outputs[MAIN_NEGATIVE_OUTPUT].setVoltage(
             simd::clamp(env * 10.f, -12.0, 12.0));
-      } else {
+      }
+      else
+      {
         outputs[MAIN_NEGATIVE_OUTPUT].setVoltage(simd::clamp(
             output * (-10.f * params[GLOBAL_RING_OFFSET_PARAM].getValue()),
             -12.0, 12.0));
@@ -679,22 +830,26 @@ struct Vega : Module {
     }
   }
 
-  void process(const ProcessArgs &args) override {
+  void process(const ProcessArgs &args) override
+  {
     // First, we need to get the gate
     bool gate_active = inputs[GATE_INPUT].value > 1.0;
 
-    if (gateDetect.process(gate_active)) {
+    if (gateDetect.process(gate_active))
+    {
       is_running = true;
       current_stage = ATTACK;
     }
 
     bool retrig = inputs[RETRIG_INPUT].getVoltage() > 1.0;
 
-    if (retrigDetect.process(retrig)) {
+    if (retrigDetect.process(retrig))
+    {
       current_stage = ATTACK;
     }
 
-    if (is_running) {
+    if (is_running)
+    {
       float anger = (simd::pow(params[ANGER_PARAM].getValue(), 2) * 8) + 1 -
                     (inputs[ANGER_INPUT].getVoltage() / 10.f);
 
@@ -707,89 +862,113 @@ struct Vega : Module {
       // used for attack->decay, as that is a special case and so handled in
       // the attack stage's logic
 
-      if (inputs[SUSTAIN_MOD_INPUT].isConnected()) {
+      if (inputs[SUSTAIN_MOD_INPUT].isConnected())
+      {
         modulation_dest = inputs[SUSTAIN_MOD_INPUT].getVoltage();
-      } else if (inputs[DECAY_MOD_INPUT].isConnected()) {
+      }
+      else if (inputs[DECAY_MOD_INPUT].isConnected())
+      {
         modulation_dest = inputs[DECAY_MOD_INPUT].getVoltage();
-      } else if (inputs[ATTACK_MOD_INPUT].isConnected()) {
+      }
+      else if (inputs[ATTACK_MOD_INPUT].isConnected())
+      {
         modulation_dest = inputs[ATTACK_MOD_INPUT].getVoltage();
-      } else {
+      }
+      else
+      {
         modulation_dest = 0;
       }
 
       // Generate S&H osc
-      if (inputs[SANDH_INPUT].isConnected()) {
+      if (inputs[SANDH_INPUT].isConnected())
+      {
         sampleSquare += args.sampleTime *
                         (params[SAMPLE_AND_HOLD_PARAM].getValue() *
                          (1.f - (inputs[SANDH_INPUT].getVoltage() / 10.f)));
-      } else {
+      }
+      else
+      {
         sampleSquare +=
             args.sampleTime * params[SAMPLE_AND_HOLD_PARAM].getValue();
       }
 
-      if (sampleSquare >= .5f) {
+      if (sampleSquare >= .5f)
+      {
         sampleSquare = -.5f;
       }
 
-      if (params[SAMPLE_AND_HOLD_PARAM].getValue() == 40.f) {
-        sampleSquare = 1;  // always update output
+      if (params[SAMPLE_AND_HOLD_PARAM].getValue() == 40.f)
+      {
+        sampleSquare = 1; // always update output
       }
 
-      switch (current_stage) {
-        case ATTACK:
-          attack_stage(phasor, env, anger, current_stage);
-          break;
-        case DECAY:
-          decay_stage(phasor, env, anger, current_stage);
-          break;
-        case SUSTAIN:
-          sustain_stage(phasor, env, anger, current_stage);
-          if (!gate_active) {
-            current_stage = RELEASE;
-          }
-          break;
-        case RELEASE:
-          release_stage(phasor, env, anger, current_stage);
-          if (phasor <= 0.f) {
-            output = 0.f;
-            current_stage = FINISHED;
-          }
-          break;
-        case FINISHED:
-          displayActive(FINISHED);
-          perStageGateOutput(FINISHED);
+      switch (current_stage)
+      {
+      case ATTACK:
+        attack_stage(phasor, env, anger, current_stage);
+        break;
+      case DECAY:
+        decay_stage(phasor, env, anger, current_stage);
+        break;
+      case SUSTAIN:
+        sustain_stage(phasor, env, anger, current_stage);
+        if (!gate_active)
+        {
+          current_stage = RELEASE;
+        }
+        break;
+      case RELEASE:
+        release_stage(phasor, env, anger, current_stage);
+        if (phasor <= 0.f)
+        {
           output = 0.f;
-          is_running = false;
+          current_stage = FINISHED;
+        }
+        break;
+      case FINISHED:
+        displayActive(FINISHED);
+        perStageGateOutput(FINISHED);
+        output = 0.f;
+        is_running = false;
       }
 
       // Output, this first if controls the s&h and the TRACK_PARAM the
       // track&hold amount output is clampped to -12 and 12. There's just to
       // much going on to ensure that bad outputs can't happen.
 
-      if (sampleSquare >= (.499f - params[TRACK_PARAM].getValue())) {
-        if (inputs[GLOBAL_RING_INPUT].isConnected()) {
+      if (sampleSquare >= (.499f - params[TRACK_PARAM].getValue()))
+      {
+        if (inputs[GLOBAL_RING_INPUT].isConnected())
+        {
           ring_active_output(output);
-        } else {
+        }
+        else
+        {
           plain_output(env, output);
         }
       }
-    } else {  // END isrunning
+    }
+    else
+    { // END isrunning
       // Necessary as modulation/S&H may leave it high
       outputs[MAIN_NEGATIVE_OUTPUT].setVoltage(0.f);
       outputs[MAIN_POSITIVE_OUTPUT].setVoltage(0.f);
     }
 
-    if (processDivider.process()) {
+    if (processDivider.process())
+    {
       update_lights();
     }
   }
 
-  void onAdd() override {
+  void onAdd() override
+  {
     // Set the modulation mode LEDS to inital value at startup
     lights[AMODE_LIGHT + 0].setBrightness(1.f);
     lights[DMODE_LIGHT + 0].setBrightness(1.f);
     lights[SMODE_LIGHT + 0].setBrightness(1.f);
     lights[RMODE_LIGHT + 0].setBrightness(1.f);
+    
     // Set the outputmode LEDs to inital value at startup
     lights[AGATE_LIGHT + 2].setBrightness(0.f);
     lights[DGATE_LIGHT + 2].setBrightness(0.f);
@@ -798,8 +977,10 @@ struct Vega : Module {
   }
 };
 
-struct VegaWidget : ModuleWidget {
-  VegaWidget(Vega *module) {
+struct VegaWidget : ModuleWidget
+{
+  VegaWidget(Vega *module)
+  {
     setModule(module);
     setPanel(
         APP->window->loadSvg(asset::plugin(pluginInstance, "res/Vega.svg")));
@@ -924,59 +1105,77 @@ struct VegaWidget : ModuleWidget {
         mm2px(Vec(66.712, 91.089)), module, Vega::RGATE_LIGHT));
   }
 
-  void appendContextMenu(Menu *menu) override {
+  void appendContextMenu(Menu *menu) override
+  {
     Vega *vega = dynamic_cast<Vega *>(module);
     assert(vega);
 
-    struct VegaOutputAltItem : MenuItem {
+    struct VegaOutputAltItem : MenuItem
+    {
       Vega *vega;
 
-      void onAction(const event::Action &e) override {
-        if (vega->paramQuantities[Vega::OUTPUT_ALT_PARAM]->getValue() == 1.f) {
+      void onAction(const event::Action &e) override
+      {
+        if (vega->paramQuantities[Vega::OUTPUT_ALT_PARAM]->getValue() == 1.f)
+        {
           vega->paramQuantities[Vega::OUTPUT_ALT_PARAM]->setValue(0.f);
-        } else {
+        }
+        else
+        {
           vega->paramQuantities[Vega::OUTPUT_ALT_PARAM]->setValue(1.f);
         }
       }
-      void step() override {
+      void step() override
+      {
         rightText = CHECKMARK(
             vega->paramQuantities[Vega::OUTPUT_ALT_PARAM]->getValue() == 1.f);
       }
     };
 
-    struct VegaOutputEORItem : MenuItem {
+    struct VegaOutputEORItem : MenuItem
+    {
       Vega *vega;
 
-      void onAction(const event::Action &e) override {
-        if (vega->paramQuantities[Vega::OUTPUT_EOR_PARAM]->getValue() == 1.f) {
+      void onAction(const event::Action &e) override
+      {
+        if (vega->paramQuantities[Vega::OUTPUT_EOR_PARAM]->getValue() == 1.f)
+        {
           vega->paramQuantities[Vega::OUTPUT_EOR_PARAM]->setValue(0.f);
-        } else {
+        }
+        else
+        {
           vega->paramQuantities[Vega::OUTPUT_EOR_PARAM]->setValue(1.f);
         }
       }
 
-      void step() override {
+      void step() override
+      {
         rightText = CHECKMARK(
             vega->paramQuantities[Vega::OUTPUT_EOR_PARAM]->getValue() == 1.f);
       }
     };
 
-    struct VegaOutputTriggersItem : MenuItem {
+    struct VegaOutputTriggersItem : MenuItem
+    {
       Vega *vega;
 
-      void onAction(const event::Action &e) override {
+      void onAction(const event::Action &e) override
+      {
         vega->menu_stage_gates_are_triggers =
             !vega->menu_stage_gates_are_triggers;
       }
-      void step() override {
+      void step() override
+      {
         rightText = CHECKMARK(vega->menu_stage_gates_are_triggers);
       }
     };
 
-    struct VegaDecTimeItem : MenuItem {
+    struct VegaDecTimeItem : MenuItem
+    {
       Vega *vega;
 
-      void onAction(const event::Action &e) override {
+      void onAction(const event::Action &e) override
+      {
         vega->paramQuantities[Vega::ATTACK_TIME_PARAM]->setValue(
             vega->paramQuantities[Vega::ATTACK_TIME_PARAM]->getValue() - .1);
         vega->paramQuantities[Vega::DECAY_TIME_PARAM]->setValue(
@@ -986,10 +1185,12 @@ struct VegaWidget : ModuleWidget {
       }
     };
 
-    struct VegaIncTimeItem : MenuItem {
+    struct VegaIncTimeItem : MenuItem
+    {
       Vega *vega;
 
-      void onAction(const event::Action &e) override {
+      void onAction(const event::Action &e) override
+      {
         vega->paramQuantities[Vega::ATTACK_TIME_PARAM]->setValue(
             vega->paramQuantities[Vega::ATTACK_TIME_PARAM]->getValue() + .1);
         vega->paramQuantities[Vega::DECAY_TIME_PARAM]->setValue(
@@ -1044,9 +1245,14 @@ Model *modelVega = createModel<Vega, VegaWidget>("Vega");
 
 // BD383238 - Vega Expander.
 
-struct BD383238 : Module {
-  enum ParamIds { NUM_PARAMS };
-  enum InputIds {
+struct BD383238 : Module
+{
+  enum ParamIds
+  {
+    NUM_PARAMS
+  };
+  enum InputIds
+  {
     ATTACK_TIME_INPUT,
     ATTACK_CURVE_INPUT,
     DECAY_TIME_INPUT,
@@ -1056,74 +1262,120 @@ struct BD383238 : Module {
     RELESAE_CURVE_INPUT,
     NUM_INPUTS
   };
-  enum OutputIds { NUM_OUTPUTS };
-  enum LightIds { NUM_LIGHTS };
+  enum OutputIds
+  {
+    NUM_OUTPUTS
+  };
+  enum LightIds
+  {
+    NUM_LIGHTS
+  };
 
-  BD383238() { config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS); }
+  BD383238()
+  {
+    config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 
-  Vega *findHostModulePtr(Module *module) {
-    if (module) {
-      if (module->rightExpander.module) {
-        if (module->rightExpander.module->model == modelVega) {
+    configInput(ATTACK_TIME_INPUT, "Attack Time");
+    configInput(ATTACK_CURVE_INPUT, "Attack Curve");
+    configInput(DECAY_TIME_INPUT, "Decay Time");
+    configInput(DECAY_CURVE_INPUT, "Decay Curve");
+    configInput(SUSTAIN_LEVEL_INPUT, "Sustain Level");
+    configInput(RELEASE_TIME_INPUT, "Release Time");
+    configInput(RELESAE_CURVE_INPUT, "Release Curve");
+  }
+
+  Vega *findHostModulePtr(Module *module)
+  {
+    if (module)
+    {
+      if (module->rightExpander.module)
+      {
+        if (module->rightExpander.module->model == modelVega)
+        {
           return reinterpret_cast<Vega *>(module->rightExpander.module);
         }
-      } else {
+      }
+      else
+      {
         return nullptr;
       }
     }
     return (nullptr);
   }
 
-  void process(const ProcessArgs &args) override {
+  void process(const ProcessArgs &args) override
+  {
     // connect to right expander module
     Vega *mother = findHostModulePtr(this);
 
-    if (mother) {
+    if (mother)
+    {
       // TIME controls
-      if (inputs[ATTACK_TIME_INPUT].isConnected()) {
+      if (inputs[ATTACK_TIME_INPUT].isConnected())
+      {
         mother->attack_time_from_expander =
             inputs[ATTACK_TIME_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->attack_time_from_expander = 0;
       }
-      if (inputs[DECAY_TIME_INPUT].isConnected()) {
+      if (inputs[DECAY_TIME_INPUT].isConnected())
+      {
         mother->decay_time_from_expander =
             inputs[DECAY_TIME_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->decay_time_from_expander = 0;
       }
-      if (inputs[RELEASE_TIME_INPUT].isConnected()) {
+      if (inputs[RELEASE_TIME_INPUT].isConnected())
+      {
         mother->release_time_from_expander =
             inputs[RELEASE_TIME_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->release_time_from_expander = 0;
       }
 
       // S Levels
-      if (inputs[SUSTAIN_LEVEL_INPUT].isConnected()) {
+      if (inputs[SUSTAIN_LEVEL_INPUT].isConnected())
+      {
         mother->sustain_level_from_expander =
             inputs[SUSTAIN_LEVEL_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->sustain_level_from_expander = 0;
       }
 
       // CURVE CONTROLS
-      if (inputs[ATTACK_CURVE_INPUT].isConnected()) {
+      if (inputs[ATTACK_CURVE_INPUT].isConnected())
+      {
         mother->attack_curve_from_expander =
             inputs[ATTACK_CURVE_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->attack_curve_from_expander = 0;
       }
-      if (inputs[DECAY_CURVE_INPUT].isConnected()) {
+      if (inputs[DECAY_CURVE_INPUT].isConnected())
+      {
         mother->decay_curve_from_expander =
             inputs[DECAY_CURVE_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->decay_curve_from_expander = 0;
       }
-      if (inputs[RELESAE_CURVE_INPUT].isConnected()) {
+      if (inputs[RELESAE_CURVE_INPUT].isConnected())
+      {
         mother->release_curve_from_expander =
             inputs[RELESAE_CURVE_INPUT].getVoltage() / 10;
-      } else {
+      }
+      else
+      {
         mother->release_curve_from_expander = 0;
       }
     }
@@ -1132,8 +1384,10 @@ struct BD383238 : Module {
   void onAdd() override {}
 };
 
-struct BD383238Widget : ModuleWidget {
-  BD383238Widget(BD383238 *module) {
+struct BD383238Widget : ModuleWidget
+{
+  BD383238Widget(BD383238 *module)
+  {
     setModule(module);
     setPanel(APP->window->loadSvg(
         asset::plugin(pluginInstance, "res/BD383238.svg")));

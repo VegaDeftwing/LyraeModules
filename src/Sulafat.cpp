@@ -1,8 +1,10 @@
 #include "plugin.hpp"
 
 using simd::float_4;
-struct Sulafat : Module {
-  enum ParamIds {
+struct Sulafat : Module
+{
+  enum ParamIds
+  {
     KNOB_PARAM,
     PARAM_LFO1,
     PARAM_LFO2,
@@ -10,9 +12,25 @@ struct Sulafat : Module {
     PARAM_FRIGHT,
     NUM_PARAMS
   };
-  enum InputIds { LEFT_INPUT, RIGHT_INPUT, NUM_INPUTS };
-  enum OutputIds { LEFT_OUTPUT, RIGHT_OUTPUT, NUM_OUTPUTS };
-  enum LightIds { LED1_LIGHT, LED2_LIGHT, LED3_LIGHT, NUM_LIGHTS };
+  enum InputIds
+  {
+    LEFT_INPUT,
+    RIGHT_INPUT,
+    NUM_INPUTS
+  };
+  enum OutputIds
+  {
+    LEFT_OUTPUT,
+    RIGHT_OUTPUT,
+    NUM_OUTPUTS
+  };
+  enum LightIds
+  {
+    LED1_LIGHT,
+    LED2_LIGHT,
+    LED3_LIGHT,
+    NUM_LIGHTS
+  };
 
   dsp::ClockDivider processDivider;
   dsp::RCFilter lowpassFilter;
@@ -25,8 +43,15 @@ struct Sulafat : Module {
   rack::dsp::Upsampler<oversample, quality> upsamplerR;
   rack::dsp::Decimator<oversample, quality> decimatorR;
 
-  Sulafat() {
+  Sulafat()
+  {
     config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+
+    configInput(LEFT_INPUT, "Left");
+    configInput(RIGHT_INPUT, "Right");
+    configOutput(LEFT_OUTPUT, "Left");
+    configOutput(RIGHT_OUTPUT, "Right");
+
     configSwitch(KNOB_PARAM, 0.f, 7.f, 0.f, "Mode Selection",
                  {"Bypass", "Fold", "Quant Fold", "Tangent", "Half Quant",
                   "Ring", "S&H-Ish", "Wut?"});
@@ -45,7 +70,8 @@ struct Sulafat : Module {
   float foldl = 0.f;
   float foldr = 0.f;
 
-  void process(const ProcessArgs &args) override {
+  void process(const ProcessArgs &args) override
+  {
     // Generate Interal LFOs
     lfo1speed = params[PARAM_LFO1].getValue();
     lfo2speed = params[PARAM_LFO2].getValue();
@@ -56,243 +82,294 @@ struct Sulafat : Module {
         dsp::FREQ_C4 / 300 * args.sampleTime * simd::pow(2.f, lfo1speed * 7);
     phase2 +=
         dsp::FREQ_C4 / 300 * args.sampleTime * simd::pow(2.f, lfo2speed * 7);
-    if (phase1 >= .5f) {
+    if (phase1 >= .5f)
+    {
       phase1 = -.5f;
     }
-    if (phase2 >= .5f) {
+    if (phase2 >= .5f)
+    {
       phase2 = -.5f;
     }
     float sine1 = simd::sin(2.f * M_PI * phase1);
     float sine2 = simd::sin(2.f * M_PI * phase2);
 
     // All The Modes
-    switch (mode) {
-      case 0:  // Bypass mode
-        outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          outputs[RIGHT_OUTPUT].setVoltage(inputs[RIGHT_INPUT].getVoltage());
-        } else {
-          outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+    switch (mode)
+    {
+    case 0: // Bypass mode
+      outputs[LEFT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        outputs[RIGHT_OUTPUT].setVoltage(inputs[RIGHT_INPUT].getVoltage());
+      }
+      else
+      {
+        outputs[RIGHT_OUTPUT].setVoltage(inputs[LEFT_INPUT].getVoltage());
+      }
+      break;
+    case 1: // Wavefolder with DC offset modulation
+      upsamplerL.process(inputs[LEFT_INPUT].getVoltage() + (sine2 * .15),
+                         bufferL);
+      for (size_t i = 0; i < oversample; i++)
+      {
+        bufferL[i] = simd::fmod(bufferL[i], foldr) * 1.66;
+      }
+      outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        upsamplerR.process(inputs[RIGHT_INPUT].getVoltage() + (sine1 * .15),
+                           bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.66;
         }
-        break;
-      case 1:  // Wavefolder with DC offset modulation
-        upsamplerL.process(inputs[LEFT_INPUT].getVoltage() + (sine2 * .15),
-                           bufferL);
-        for (size_t i = 0; i < oversample; i++) {
-          bufferL[i] = simd::fmod(bufferL[i], foldr) * 1.66;
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      else
+      {
+        upsamplerR.process(inputs[LEFT_INPUT].getVoltage() + (sine1 * .15),
+                           bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.51;
         }
-        outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          upsamplerR.process(inputs[RIGHT_INPUT].getVoltage() + (sine1 * .15),
-                             bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.66;
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
-        } else {
-          upsamplerR.process(inputs[LEFT_INPUT].getVoltage() + (sine1 * .15),
-                             bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.51;
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
-        }
-        break;
-      case 2:  // Direct modulo, with modulation. This Basically does a S&H
-               // effect on top of the wave folder
-        upsamplerL.process(
-            inputs[LEFT_INPUT].getVoltage() + (sine1 * .25) + (sine2 * .35),
-            bufferL);
-        for (size_t i = 0; i < oversample; i++) {
-          bufferL[i] = (float)((int)bufferL[i] % (int)foldr * 2.5);
-        }
-        outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      break;
+    case 2:
+      // Direct modulo, with modulation. This Basically does a S&H
+      // effect on top of the wave folder
+      upsamplerL.process(
+          inputs[LEFT_INPUT].getVoltage() + (sine1 * .25) + (sine2 * .35),
+          bufferL);
+      for (size_t i = 0; i < oversample; i++)
+      {
+        bufferL[i] = (float)((int)bufferL[i] % (int)foldr * 2.5);
+      }
+      outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
 
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          upsamplerR.process(
-              inputs[RIGHT_INPUT].getVoltage() + (sine1 * .35) + (sine2 * .25),
-              bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
-        } else {
-          upsamplerR.process(
-              inputs[LEFT_INPUT].getVoltage() + (sine1 * .35) + (sine2 * .25),
-              bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        upsamplerR.process(
+            inputs[RIGHT_INPUT].getVoltage() + (sine1 * .35) + (sine2 * .25),
+            bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
         }
-        break;
-      case 3:  // Tangent + clamping = Wavefolding? Again?
-
-        upsamplerL.process(
-            .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1 * .15),
-            bufferL);
-        for (size_t i = 0; i < oversample; i++) {
-          bufferL[i] = simd::clamp((simd::tan(bufferL[i])), -5.f, 5.f);
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      else
+      {
+        upsamplerR.process(
+            inputs[LEFT_INPUT].getVoltage() + (sine1 * .35) + (sine2 * .25),
+            bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = (float)((int)bufferR[i] % (int)foldr * 2.5);
         }
-        outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      break;
+    case 3: // Tangent + clamping = Wavefolding? Again?
 
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          upsamplerR.process(
-              .25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2 * .15),
-              bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
-        } else {
-          upsamplerR.process(
-              .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2 * .15),
-              bufferR);
-          for (size_t i = 0; i < oversample; i++) {
-            bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
-          }
-          outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      upsamplerL.process(
+          .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1 * .15),
+          bufferL);
+      for (size_t i = 0; i < oversample; i++)
+      {
+        bufferL[i] = simd::clamp((simd::tan(bufferL[i])), -5.f, 5.f);
+      }
+      outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
+
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        upsamplerR.process(
+            .25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2 * .15),
+            bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
         }
-        break;
-      case 4:  // Combine modes 1 & 2 on each half of the wave, filter mode 2 a
-               // bit to keep it from dominating the output
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      else
+      {
+        upsamplerR.process(
+            .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2 * .15),
+            bufferR);
+        for (size_t i = 0; i < oversample; i++)
+        {
+          bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
+        }
+        outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
+      }
+      break;
+    case 4: // Combine modes 1 & 2 on each half of the wave, filter mode 2 a
+            // bit to keep it from dominating the output
 
-        lowpassFilter.setCutoffFreq(1000 / args.sampleRate);
+      lowpassFilter.setCutoffFreq(1000 / args.sampleRate);
 
-        if (inputs[LEFT_INPUT].getVoltage() > 0) {
-          float filterMe = (float)((int)(inputs[LEFT_INPUT].getVoltage() +
+      if (inputs[LEFT_INPUT].getVoltage() > 0)
+      {
+        float filterMe = (float)((int)(inputs[LEFT_INPUT].getVoltage() +
+                                       (sine1 * .25) + (sine2 * .35)) %
+                                 (int)foldl) *
+                         2.5;
+        lowpassFilter.process(filterMe);
+        filterMe = lowpassFilter.lowpass();
+        outputs[LEFT_OUTPUT].setVoltage(filterMe);
+      }
+      else
+      {
+        outputs[LEFT_OUTPUT].setVoltage(
+            simd::fmod(inputs[LEFT_INPUT].getVoltage() + (sine1 * .25) +
+                           (sine2 * .35),
+                       foldl) *
+            1.66);
+      }
+
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        if (inputs[RIGHT_INPUT].getVoltage() < 0)
+        {
+          float filterMe = (float)((int)(inputs[RIGHT_INPUT].getVoltage() +
                                          (sine1 * .25) + (sine2 * .35)) %
-                                   (int)foldl) *
+                                   (int)foldr) *
                            2.5;
           lowpassFilter.process(filterMe);
           filterMe = lowpassFilter.lowpass();
-          outputs[LEFT_OUTPUT].setVoltage(filterMe);
-        } else {
-          outputs[LEFT_OUTPUT].setVoltage(
-              simd::fmod(inputs[LEFT_INPUT].getVoltage() + (sine1 * .25) +
-                             (sine2 * .35),
-                         foldl) *
+          outputs[RIGHT_OUTPUT].setVoltage(filterMe);
+        }
+        else
+        {
+          outputs[RIGHT_OUTPUT].setVoltage(
+              simd::fmod(inputs[RIGHT_INPUT].getVoltage() + (sine1 * .35) +
+                             (sine2 * .25),
+                         foldr) *
               1.66);
         }
-
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          if (inputs[RIGHT_INPUT].getVoltage() < 0) {
-            float filterMe = (float)((int)(inputs[RIGHT_INPUT].getVoltage() +
-                                           (sine1 * .25) + (sine2 * .35)) %
-                                     (int)foldr) *
-                             2.5;
-            lowpassFilter.process(filterMe);
-            filterMe = lowpassFilter.lowpass();
-            outputs[RIGHT_OUTPUT].setVoltage(filterMe);
-          } else {
-            outputs[RIGHT_OUTPUT].setVoltage(
-                simd::fmod(inputs[RIGHT_INPUT].getVoltage() + (sine1 * .35) +
-                               (sine2 * .25),
-                           foldr) *
-                1.66);
-          }
-        } else {
-          if (inputs[LEFT_INPUT].getVoltage() < 0) {
-            float filterMe = (float)((int)(inputs[LEFT_INPUT].getVoltage() +
-                                           (sine1 * .25) + (sine2 * .35)) %
-                                     (int)foldr) *
-                             2.5;
-            lowpassFilter.process(filterMe);
-            filterMe = lowpassFilter.lowpass();
-            outputs[RIGHT_OUTPUT].setVoltage(filterMe);
-          } else {
-            outputs[RIGHT_OUTPUT].setVoltage(
-                simd::fmod(inputs[LEFT_INPUT].getVoltage() + (sine1 * .35) +
-                               (sine2 * .25),
-                           foldr) *
-                1.66);
-          }
+      }
+      else
+      {
+        if (inputs[LEFT_INPUT].getVoltage() < 0)
+        {
+          float filterMe = (float)((int)(inputs[LEFT_INPUT].getVoltage() +
+                                         (sine1 * .25) + (sine2 * .35)) %
+                                   (int)foldr) *
+                           2.5;
+          lowpassFilter.process(filterMe);
+          filterMe = lowpassFilter.lowpass();
+          outputs[RIGHT_OUTPUT].setVoltage(filterMe);
         }
-        break;
-
-      case 5:  // Simple Ring-Mod + modulation, if no right input, use LFOs - no
-               // anti-aliasing needed
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          outputs[LEFT_OUTPUT].setVoltage(
-              simd::clamp(inputs[LEFT_INPUT].getVoltage() *
-                              (inputs[RIGHT_INPUT].getVoltage() - 5.f +
-                               (sine1 * .35) - (sine2 * .25)),
-                          -5.f, 5.f));
+        else
+        {
           outputs[RIGHT_OUTPUT].setVoltage(
-              simd::clamp(inputs[RIGHT_INPUT].getVoltage() *
-                              (inputs[LEFT_INPUT].getVoltage() - 5.f +
-                               (sine1 * .25) - (sine2 * .35)),
-                          -5.f, 5.f));
-        } else {
-          outputs[LEFT_OUTPUT].setVoltage(
-              inputs[LEFT_INPUT].getVoltage() * (sine2 * .35) + (sine1 * .75));
+              simd::fmod(inputs[LEFT_INPUT].getVoltage() + (sine1 * .35) +
+                             (sine2 * .25),
+                         foldr) *
+              1.66);
+        }
+      }
+      break;
+
+    case 5: // Simple Ring-Mod + modulation, if no right input, use LFOs - no
+            // anti-aliasing needed
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        outputs[LEFT_OUTPUT].setVoltage(
+            simd::clamp(inputs[LEFT_INPUT].getVoltage() *
+                            (inputs[RIGHT_INPUT].getVoltage() - 5.f +
+                             (sine1 * .35) - (sine2 * .25)),
+                        -5.f, 5.f));
+        outputs[RIGHT_OUTPUT].setVoltage(
+            simd::clamp(inputs[RIGHT_INPUT].getVoltage() *
+                            (inputs[LEFT_INPUT].getVoltage() - 5.f +
+                             (sine1 * .25) - (sine2 * .35)),
+                        -5.f, 5.f));
+      }
+      else
+      {
+        outputs[LEFT_OUTPUT].setVoltage(
+            inputs[LEFT_INPUT].getVoltage() * (sine2 * .35) + (sine1 * .75));
+        outputs[RIGHT_OUTPUT].setVoltage(
+            inputs[LEFT_INPUT].getVoltage() * (-sine1 * .75) + (sine2 * .35));
+      }
+      break;
+
+    case 6: // This is very stupid, but it's fun. This one is intentionally
+            // not anti-aliased because it's supposed to be weird and
+            // glitchy.
+
+      if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage()))
+      {
+        outputs[LEFT_OUTPUT].setVoltage(
+            simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
+      }
+
+      if (inputs[RIGHT_INPUT].isConnected())
+      {
+        if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage()))
+        {
           outputs[RIGHT_OUTPUT].setVoltage(
-              inputs[LEFT_INPUT].getVoltage() * (-sine1 * .75) + (sine2 * .35));
+              simd::clamp(inputs[RIGHT_INPUT].getVoltage(), -5.f, 5.f));
         }
-        break;
-
-      case 6:  // This is very stupid, but it's fun. This one is intentionally
-               // not anti-aliased because it's supposed to be weird and
-               // glitchy.
-
-        if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())) {
-          outputs[LEFT_OUTPUT].setVoltage(
-              simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
-        }
-
-        if (inputs[RIGHT_INPUT].isConnected()) {
-          if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())) {
-            outputs[RIGHT_OUTPUT].setVoltage(
-                simd::clamp(inputs[RIGHT_INPUT].getVoltage(), -5.f, 5.f));
-          }
-        } else {
-          // This was isEven until 1.0.2, but I discovered that made it just
-          // pass the input directly. Oops.
-          if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())) {
-            outputs[RIGHT_OUTPUT].setVoltage(
-                simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
-          }
-        }
-        break;
-
-      case 7:  // Ringmod w/ LFOs but also just do the raw output with isOdd,
-               // this gives a really weird output
-        outputs[LEFT_OUTPUT].setVoltage(simd::clamp(
-            inputs[LEFT_INPUT].getVoltage() * (sine2 * .35) + (sine1 * .75),
-            -5.f, 5.f));
-        outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(
-            inputs[LEFT_INPUT].getVoltage() * (-sine1 * .75) + (sine2 * .35),
-            -5.f, 5.f));
-        if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage())) {
-          outputs[LEFT_OUTPUT].setVoltage(
-              simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
+      }
+      else
+      {
+        // This was isEven until 1.0.2, but I discovered that made it just
+        // pass the input directly. Oops.
+        if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage()))
+        {
           outputs[RIGHT_OUTPUT].setVoltage(
               simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
         }
+      }
+      break;
 
-        break;
-      case 8:  // No input, output the LFO's, make knob frequency
-        outputs[LEFT_OUTPUT].setVoltage(sine1 * 5.f);
-        outputs[RIGHT_OUTPUT].setVoltage(sine1 * sine2 * 5.f);
-        break;
+    case 7: // Ringmod w/ LFOs but also just do the raw output with isOdd,
+            // this gives a really weird output
+      outputs[LEFT_OUTPUT].setVoltage(simd::clamp(
+          inputs[LEFT_INPUT].getVoltage() * (sine2 * .35) + (sine1 * .75),
+          -5.f, 5.f));
+      outputs[RIGHT_OUTPUT].setVoltage(simd::clamp(
+          inputs[LEFT_INPUT].getVoltage() * (-sine1 * .75) + (sine2 * .35),
+          -5.f, 5.f));
+      if (rack::math::isOdd((int)inputs[LEFT_INPUT].getVoltage()))
+      {
+        outputs[LEFT_OUTPUT].setVoltage(
+            simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
+        outputs[RIGHT_OUTPUT].setVoltage(
+            simd::clamp(inputs[LEFT_INPUT].getVoltage(), -5.f, 5.f));
+      }
 
-      default:
-        mode = 0;
-        break;
+      break;
+    case 8: // No input, output the LFO's, make knob frequency
+      outputs[LEFT_OUTPUT].setVoltage(sine1 * 5.f);
+      outputs[RIGHT_OUTPUT].setVoltage(sine1 * sine2 * 5.f);
+      break;
+
+    default:
+      mode = 0;
+      break;
     }
 
-    if (processDivider.process()) {
+    if (processDivider.process())
+    {
       mode = (int)params[KNOB_PARAM].getValue();
       lights[LED1_LIGHT].setBrightness(mode & 0b001 ? 1.f : 0.f);
       lights[LED2_LIGHT].setBrightness(mode & 0b010 ? 1.f : 0.f);
       lights[LED3_LIGHT].setBrightness(mode & 0b100 ? 1.f : 0.f);
-      if (!inputs[LEFT_INPUT].isConnected()) mode = 8;
+      if (!inputs[LEFT_INPUT].isConnected())
+        mode = 8;
     }
   }
 };
 
-struct SulafatWidget : ModuleWidget {
-  SulafatWidget(Sulafat *module) {
+struct SulafatWidget : ModuleWidget
+{
+  SulafatWidget(Sulafat *module)
+  {
     setModule(module);
     setPanel(
         APP->window->loadSvg(asset::plugin(pluginInstance, "res/Sulafat.svg")));
@@ -322,33 +399,42 @@ struct SulafatWidget : ModuleWidget {
         mm2px(Vec(5.08, 58.183)), module, Sulafat::LED3_LIGHT));
   }
 
-  void appendContextMenu(Menu *menu) override {
+  void appendContextMenu(Menu *menu) override
+  {
     Sulafat *sulafat = dynamic_cast<Sulafat *>(module);
     assert(sulafat);
 
-    struct LFO1Slider : ui::Slider {
-      LFO1Slider(Sulafat *module) {
+    struct LFO1Slider : ui::Slider
+    {
+      LFO1Slider(Sulafat *module)
+      {
         box.size.x = 180.0f;
         quantity = module->paramQuantities[Sulafat::PARAM_LFO1];
       }
     };
 
-    struct LFO2Slider : ui::Slider {
-      LFO2Slider(Sulafat *module) {
+    struct LFO2Slider : ui::Slider
+    {
+      LFO2Slider(Sulafat *module)
+      {
         box.size.x = 180.0f;
         quantity = module->paramQuantities[Sulafat::PARAM_LFO2];
       }
     };
 
-    struct FLSlider : ui::Slider {
-      FLSlider(Sulafat *module) {
+    struct FLSlider : ui::Slider
+    {
+      FLSlider(Sulafat *module)
+      {
         box.size.x = 180.0f;
         quantity = module->paramQuantities[Sulafat::PARAM_FLEFT];
       }
     };
 
-    struct FRSlider : ui::Slider {
-      FRSlider(Sulafat *module) {
+    struct FRSlider : ui::Slider
+    {
+      FRSlider(Sulafat *module)
+      {
         box.size.x = 180.0f;
         quantity = module->paramQuantities[Sulafat::PARAM_FRIGHT];
       }

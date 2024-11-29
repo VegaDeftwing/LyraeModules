@@ -71,14 +71,33 @@ Because with modulation it is quite easy for the output to get to extreme values
 
 For some extra fun, there's a track-and-hold-ish section at the bottom of the module under the anger knob, play with it and see what happens
 
-## Sheliak - TODO
+## Sheliak
 > Sheliak is a semidetached binary system made up of a stellar class B6-8 primary star and a secondary that is probably also a B-type star. The fainter, less massive star in the system was once the more massive member of the pair, which caused it to evolve away from the main sequence first and become a giant star. Because the pair are in a close orbit, as this star expanded into a giant it filled its Roche lobe and transferred most of its mass over to its companion.
 
-Idea: Sustain from that MIT licenced repo
+Sheliak is an analog shift register with some extra tricks. It sholud be fed a x4 (or x8, x12, x16, etc.) clock (and, optionally, reset) and some data, just like any other shift register. The top data input is the main input, the bottom data input will be XOR'd with it so that it can be used for LFSR pseudo-random patterns via self patching. The left 8 outputs are the main outputs and will be shifted every 4th clock pulse. 
+
+The Three outputs going up the left side from the bottom are triplet outputs, reflecting the XOR'd clocke'd in data (just like the main shift register) but this will update every 3rd clock pulse.
+
+### β Lyrae
+
+Beta Lyrae is the same star as Sheliak, just a different name.
+
+This module is an expander. It provides 8 outputs which are derived from the gates produced by Sheliak and the attenuators it provides.
+
+Output 1: Σ1-8
+Output 2: Σ1-4
+Output 3: Σ5-8 + perfect fifth (7/12 volt)
+Output 4: Σ3-6 + 2 octaves (2 volts)
+Output 5: (Σ1-4 % 1V) - 1V (Contrained to the same octave then down 1 octave)
+Output 6: Σ1-8 PLUS 1 octave per triplet output that is high MINUS 2 octaves
+Output 7: IF the first gate output AND the first triplet gate output are high, update to be the Σ1-4 + Σ1t-3t
+Output 8: Σ1t-3t
+
 ## ζ Lyrae - TODO
 > Zeta Lyrae is a binary star in the northern constellation of Lyra.
 
-It's a blank, but it has 'flip' option in the right click menu
+It's a blank, but it has 'flip' option in the right click menu. Entire panel renders as a light.
+
 ## δ1 Lyra
 
 > The star is radiating about 3,620 times the Sun's luminosity from its photosphere at an effective temperature of 20,350 K
@@ -94,11 +113,3 @@ Next, is the clock-selected ring mod section. The upper, middle input is the clo
 Finally, in the last section, the two inputs are actually gate inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right.
 
 It's pretty easy to get a really high output from this module, or to just get awful sounds. So, watch your levels and probably use a clipping VCA like ZZC's used here, and try to keep input content harmonically related. Octaves tend to work well.
-
-
-## ε Lyrae - TODO
-> Epsilon Lyrae (ε Lyr, ε Lyrae), also known as the Double Double, is a multiple star system of at least five stars
-
-Idea: Disaster Transport Sr clone. It definitely needs filtering, shorter delay can be brighter. Stereo, slightly different delay times
-
-Using https://www.1001freefonts.com/tinos.font
