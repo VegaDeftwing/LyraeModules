@@ -1,4 +1,5 @@
 #include "plugin.hpp"
+#include "Polyphonic.hpp"
 
 struct Beta : Module
 {
@@ -132,6 +133,9 @@ Model *modelBeta = createModel<Beta, BetaWidget>("Beta");
 
 struct Sheliak : Module
 {
+  virtual Sheliak* polyVoice(int channel) { return channel == 0 ? this : nullptr; }
+  Beta betaVoice;
+
 	enum ParamId
 	{
 		DELAY_PARAM,
@@ -193,12 +197,12 @@ struct Sheliak : Module
 	};
 
 private:
-	uint8_t shiftRegister;
-	uint8_t tripletShiftRegister;
+	uint8_t shiftRegister = 0;
+	uint8_t tripletShiftRegister = 0;
 
 	int clockCounter;
 
-	bool clockShiftBuffer[10];
+	bool clockShiftBuffer[11];
 
 	dsp::SchmittTrigger clockTrigger;
 	dsp::SchmittTrigger resetTrigger;
@@ -233,7 +237,7 @@ public:
 		clockCounter = 0;
 
 		// Initialize the buffer
-		std::fill_n(clockShiftBuffer, 10, 0.0f);
+		std::fill_n(clockShiftBuffer, 11, 0.0f);
 	}
 
 	void process(const ProcessArgs &args) override
@@ -270,7 +274,7 @@ public:
 		int delaySamplesInt = static_cast<int>(delaySamples);
 		bool delayedClockInput = clockShiftBuffer[delaySamplesInt];
 
-		for (int i = 9; i > 0; --i)
+		for (int i = 10; i > 0; --i)
 		{
 			clockShiftBuffer[i] = clockShiftBuffer[i - 1];
 		}
@@ -500,4 +504,29 @@ struct SheliakWidget : ModuleWidget
 	}
 };
 
-Model *modelSheliak = createModel<Sheliak, SheliakWidget>("Sheliak");
+template <> struct PolyTraits<Sheliak> {
+  static int extraChannels(Sheliak&) { return 0; }
+  static int packedOutput() { return Sheliak::POLY_OUTPUT; }
+  static void prepare(Sheliak& host, Sheliak& voice, int) {
+    Module* beta = host.rightExpander.module;
+    voice.rightExpander.module = nullptr;
+    if (!beta || beta->model != modelBeta) return;
+    voice.betaVoice.model = modelBeta;
+    for (size_t p = 0; p < beta->params.size(); ++p)
+      voice.betaVoice.params[p].setValue(beta->params[p].getValue());
+    for (size_t o = 0; o < beta->outputs.size(); ++o)
+      voice.betaVoice.outputs[o].channels = beta->outputs[o].isConnected() ? 1 : 0;
+    voice.rightExpander.module = &voice.betaVoice;
+  }
+  static void finish(Sheliak& host, int channels) {
+    Module* beta = host.rightExpander.module;
+    if (!beta || beta->model != modelBeta) return;
+    for (size_t o = 0; o < beta->outputs.size(); ++o) {
+      beta->outputs[o].setChannels(channels);
+      for (int c = 1; c < channels; ++c)
+        beta->outputs[o].setVoltage(host.polyVoice(c)->betaVoice.outputs[o].getVoltage(), c);
+    }
+  }
+};
+
+Model *modelSheliak = createModel<Polyphonic<Sheliak>, SheliakWidget>("Sheliak");

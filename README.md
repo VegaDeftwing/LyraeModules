@@ -1,5 +1,46 @@
 # Lyrae Modules
 
+## Polyphony
+
+Gamma, Delta, Sulafat, and Vega support up to 16 independent voices. The
+widest connected input determines the output channel count (at least one).
+Mono inputs broadcast to every voice; missing channels on shorter polyphonic
+inputs supply 0 V. Existing disconnected-input normalizations apply per voice.
+Knobs and buttons control all voices; trigger, envelope, filter, and sequencing
+state is independent. Panel lights show voice 1. Inactive voices pause and
+retain their state when the channel count shrinks.
+
+BD383238 supports polyphonic CV for each Vega voice, and its inputs also
+contribute to Vega's channel count. Sheliak's individual gate outputs and its
+Beta expander support 16 independent sequences. Sheliak's packed **Polyphonic
+Gate** output keeps its original layout: eight main bits followed by three
+triplet bits, from voice 1. A Rack cable cannot carry all eleven bits from all
+sixteen voices. Zeta is a blank panel with no signal inputs or outputs.
+
+Gamma uses Rack's four-lane SIMD for polyphonic signal arithmetic. Delta
+batches output saturation across voices; Sulafat vectorizes its fold and
+tangent waveshaping across oversamples. Stateful control flow remains scalar,
+and parameter edits are distributed only when they change. SIMD polyphonic
+math may differ by a few microvolts from scalar processing.
+
+Existing mono DSP arithmetic and timing are preserved. Sheliak now initializes
+its registers to zero and safely supports its maximum 10-sample delay; its
+previous startup contents and out-of-bounds delay behavior were undefined.
+
+## Building and testing
+
+Download the [Rack SDK](https://vcvrack.com/downloads/) for your platform, then:
+
+```sh
+make -j4 RACK_DIR=/path/to/Rack-SDK
+make test RACK_DIR=/path/to/Rack-SDK
+make benchmark RACK_DIR=/path/to/Rack-SDK
+```
+
+The headless regression suite uses the real Rack engine and needs no running
+Rack application or audio device. See [tests/README.md](tests/README.md) for
+coverage and the frozen mono reference implementation.
+
 ## Sulafat
 > Sulafat has exhausted the supply of hydrogen at its core, and so burns much brighter.
 > Sulafat is a wavefolder, and so will make your sound much brighter too!

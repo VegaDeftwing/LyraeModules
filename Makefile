@@ -21,3 +21,15 @@ DISTRIBUTABLES += presets
 
 # Include the Rack plugin Makefile framework
 include $(RACK_DIR)/plugin.mk
+
+# DSP tests link the real Rack engine; no GUI or audio device is required.
+.PHONY: test benchmark
+test: build/tests/regression
+	LD_LIBRARY_PATH="$(RACK_DIR):$$LD_LIBRARY_PATH" $<
+
+benchmark: build/tests/regression
+	LD_LIBRARY_PATH="$(RACK_DIR):$$LD_LIBRARY_PATH" $< --benchmark
+
+build/tests/regression: tests/regression.cpp Makefile $(wildcard tests/legacy/*.hpp) $(wildcard src/*.cpp src/*.hpp)
+	mkdir -p build/tests
+	$(CXX) -Isrc $(CXXFLAGS) $< -L$(RACK_DIR) -lRack -o $@

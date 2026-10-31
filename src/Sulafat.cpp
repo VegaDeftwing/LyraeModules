@@ -1,8 +1,11 @@
 #include "plugin.hpp"
+#include "Polyphonic.hpp"
 
 using simd::float_4;
 struct Sulafat : Module
 {
+  virtual Sulafat* polyVoice(int channel) { return channel == 0 ? this : nullptr; }
+
   enum ParamIds
   {
     KNOB_PARAM,
@@ -62,6 +65,34 @@ struct Sulafat : Module
     processDivider.setDivision(64);
   }
 
+  bool vectorizedShaping = false;
+  void foldBuffer(float* buffer, double gain) {
+    if (vectorizedShaping) {
+      auto value = simd::float_4::load(buffer);
+      // Rack's fmod uses floor, unlike scalar std::fmod for negative signals.
+      // Truncation preserves the original signed-remainder behavior.
+      value -= simd::trunc(value / foldr) * foldr;
+      // A rounded quotient at a fold boundary can select the wrong side of
+      // the discontinuity. Resolve just those lanes with scalar fmod.
+      for (int lane = 0; lane < 4; ++lane)
+        if (std::fabs(value[lane]) < std::fabs(foldr) * 1e-5f)
+          value[lane] = simd::fmod(buffer[lane], foldr);
+      (value * float(gain)).store(buffer);
+    } else {
+      for (int i = 0; i < oversample; ++i)
+        buffer[i] = simd::fmod(buffer[i], foldr) * gain;
+    }
+  }
+  void tangentBuffer(float* buffer) {
+    if (vectorizedShaping) {
+      auto value = simd::float_4::load(buffer);
+      simd::clamp(simd::tan(value), -5.f, 5.f).store(buffer);
+    } else {
+      for (int i = 0; i < oversample; ++i)
+        buffer[i] = simd::clamp(simd::tan(buffer[i]), -5.f, 5.f);
+    }
+  }
+
   int mode = 0;
   float phase1 = 0.f;
   float phase2 = 0.f;
@@ -110,29 +141,20 @@ struct Sulafat : Module
     case 1: // Wavefolder with DC offset modulation
       upsamplerL.process(inputs[LEFT_INPUT].getVoltage() + (sine2 * .15),
                          bufferL);
-      for (size_t i = 0; i < oversample; i++)
-      {
-        bufferL[i] = simd::fmod(bufferL[i], foldr) * 1.66;
-      }
+      foldBuffer(bufferL, 1.66);
       outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
       if (inputs[RIGHT_INPUT].isConnected())
       {
         upsamplerR.process(inputs[RIGHT_INPUT].getVoltage() + (sine1 * .15),
                            bufferR);
-        for (size_t i = 0; i < oversample; i++)
-        {
-          bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.66;
-        }
+        foldBuffer(bufferR, 1.66);
         outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
       }
       else
       {
         upsamplerR.process(inputs[LEFT_INPUT].getVoltage() + (sine1 * .15),
                            bufferR);
-        for (size_t i = 0; i < oversample; i++)
-        {
-          bufferR[i] = simd::fmod(bufferR[i], foldr) * 1.51;
-        }
+        foldBuffer(bufferR, 1.51);
         outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
       }
       break;
@@ -176,10 +198,7 @@ struct Sulafat : Module
       upsamplerL.process(
           .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine1 * .15),
           bufferL);
-      for (size_t i = 0; i < oversample; i++)
-      {
-        bufferL[i] = simd::clamp((simd::tan(bufferL[i])), -5.f, 5.f);
-      }
+      tangentBuffer(bufferL);
       outputs[LEFT_OUTPUT].setVoltage(decimatorL.process(bufferL));
 
       if (inputs[RIGHT_INPUT].isConnected())
@@ -187,10 +206,7 @@ struct Sulafat : Module
         upsamplerR.process(
             .25f * inputs[RIGHT_INPUT].getVoltage() - 2.f + (sine2 * .15),
             bufferR);
-        for (size_t i = 0; i < oversample; i++)
-        {
-          bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
-        }
+        tangentBuffer(bufferR);
         outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
       }
       else
@@ -198,10 +214,7 @@ struct Sulafat : Module
         upsamplerR.process(
             .25f * inputs[LEFT_INPUT].getVoltage() - 2.f + (sine2 * .15),
             bufferR);
-        for (size_t i = 0; i < oversample; i++)
-        {
-          bufferR[i] = simd::clamp((simd::tan(bufferR[i])), -5.f, 5.f);
-        }
+        tangentBuffer(bufferR);
         outputs[RIGHT_OUTPUT].setVoltage(decimatorR.process(bufferR));
       }
       break;
@@ -448,4 +461,13 @@ struct SulafatWidget : ModuleWidget
   }
 };
 
-Model *modelSulafat = createModel<Sulafat, SulafatWidget>("Sulafat");
+template <> struct PolyTraits<Sulafat> {
+  static int extraChannels(Sulafat&) { return 0; }
+  static int packedOutput() { return -1; }
+  static void prepare(Sulafat&, Sulafat& voice, int) {
+    voice.vectorizedShaping = true;
+  }
+  static void finish(Sulafat&, int) {}
+};
+
+Model *modelSulafat = createModel<Polyphonic<Sulafat>, SulafatWidget>("Sulafat");

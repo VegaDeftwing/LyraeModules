@@ -1,7 +1,10 @@
 #include "plugin.hpp"
+#include "Polyphonic.hpp"
 
 struct Gamma : Module
 {
+  virtual Gamma* polyVoice(int channel) { return channel == 0 ? this : nullptr; }
+
   enum ParamIds
   {
     KNOB_PARAM,
@@ -119,4 +122,39 @@ struct GammaWidget : ModuleWidget
   }
 };
 
-Model *modelGamma = createModel<Gamma, GammaWidget>("Gamma");
+// Gamma has no history: process four cable channels directly, without the
+// per-voice module/parameter copies needed by the stateful modules.
+template <> struct Polyphonic<Gamma> : Gamma {
+  void process(const ProcessArgs& args) override {
+    int channels = 1;
+    for (auto& input : inputs) channels = std::max(channels, input.getChannels());
+    if (channels == 1) {
+      Gamma::process(args);
+      outputs[LEFT_OUTPUT].setChannels(1);
+      outputs[RIGHT_OUTPUT].setChannels(1);
+      return;
+    }
+    outputs[LEFT_OUTPUT].setChannels(channels);
+    outputs[RIGHT_OUTPUT].setChannels(channels);
+    for (int c = 0; c < channels; c += 4) {
+      simd::float_4 offsets;
+      for (int lane = 0; lane < 4; ++lane) {
+        // The original .1 literal promotes this product to double. Preserve
+        // that rounding before vectorizing the remaining signal arithmetic.
+        offsets[lane] = inputs[OFFSET_INPUT].isConnected()
+            ? inputs[OFFSET_INPUT].getPolyVoltage(c + lane) *
+                (.1 * params[KNOB_PARAM].getValue())
+            : params[KNOB_PARAM].getValue();
+      }
+      if (c == 0) offset = offsets[0];
+      auto left = inputs[LEFT_INPUT].getPolyVoltageSimd<simd::float_4>(c);
+      auto right = inputs[RIGHT_INPUT].isConnected()
+          ? inputs[RIGHT_INPUT].getPolyVoltageSimd<simd::float_4>(c) : left;
+      outputs[LEFT_OUTPUT].setVoltageSimd(left + offsets, c);
+      if (params[INVERTSWITCH_PARAM].getValue()) right = -1.f * right;
+      outputs[RIGHT_OUTPUT].setVoltageSimd(right - offsets, c);
+    }
+  }
+};
+
+Model *modelGamma = createModel<Polyphonic<Gamma>, GammaWidget>("Gamma");

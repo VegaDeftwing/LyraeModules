@@ -1,7 +1,10 @@
 #include "plugin.hpp"
+#include "Polyphonic.hpp"
 
 struct Vega : Module
 {
+  virtual Vega* polyVoice(int channel) { return channel == 0 ? this : nullptr; }
+
   enum ParamIds
   {
     // Do Net Reorder these
@@ -1241,7 +1244,23 @@ struct VegaWidget : ModuleWidget
   }
 };
 
-Model *modelVega = createModel<Vega, VegaWidget>("Vega");
+template <> struct PolyTraits<Vega> {
+  static int extraChannels(Vega& host) {
+    int channels = 1;
+    Module* expander = host.leftExpander.module;
+    if (expander && expander->model == modelBD383238)
+      for (auto& input : expander->inputs)
+        channels = std::max(channels, input.getChannels());
+    return channels;
+  }
+  static int packedOutput() { return -1; }
+  static void prepare(Vega& host, Vega& voice, int) {
+    voice.menu_stage_gates_are_triggers = host.menu_stage_gates_are_triggers;
+  }
+  static void finish(Vega&, int) {}
+};
+
+Model *modelVega = createModel<Polyphonic<Vega>, VegaWidget>("Vega");
 
 // BD383238 - Vega Expander.
 
@@ -1292,7 +1311,7 @@ struct BD383238 : Module
       {
         if (module->rightExpander.module->model == modelVega)
         {
-          return reinterpret_cast<Vega *>(module->rightExpander.module);
+          return dynamic_cast<Vega *>(module->rightExpander.module);
         }
       }
       else
@@ -1305,79 +1324,26 @@ struct BD383238 : Module
 
   void process(const ProcessArgs &args) override
   {
-    // connect to right expander module
-    Vega *mother = findHostModulePtr(this);
+    Vega* mother = findHostModulePtr(this);
+    if (!mother) return;
 
-    if (mother)
+    // Input enum order matches these seven envelope controls.
+    static float Vega::* const destinations[] = {
+      &Vega::attack_time_from_expander,
+      &Vega::attack_curve_from_expander,
+      &Vega::decay_time_from_expander,
+      &Vega::decay_curve_from_expander,
+      &Vega::sustain_level_from_expander,
+      &Vega::release_time_from_expander,
+      &Vega::release_curve_from_expander
+    };
+    for (int channel = 0; channel < 16; ++channel)
     {
-      // TIME controls
-      if (inputs[ATTACK_TIME_INPUT].isConnected())
-      {
-        mother->attack_time_from_expander =
-            inputs[ATTACK_TIME_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->attack_time_from_expander = 0;
-      }
-      if (inputs[DECAY_TIME_INPUT].isConnected())
-      {
-        mother->decay_time_from_expander =
-            inputs[DECAY_TIME_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->decay_time_from_expander = 0;
-      }
-      if (inputs[RELEASE_TIME_INPUT].isConnected())
-      {
-        mother->release_time_from_expander =
-            inputs[RELEASE_TIME_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->release_time_from_expander = 0;
-      }
-
-      // S Levels
-      if (inputs[SUSTAIN_LEVEL_INPUT].isConnected())
-      {
-        mother->sustain_level_from_expander =
-            inputs[SUSTAIN_LEVEL_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->sustain_level_from_expander = 0;
-      }
-
-      // CURVE CONTROLS
-      if (inputs[ATTACK_CURVE_INPUT].isConnected())
-      {
-        mother->attack_curve_from_expander =
-            inputs[ATTACK_CURVE_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->attack_curve_from_expander = 0;
-      }
-      if (inputs[DECAY_CURVE_INPUT].isConnected())
-      {
-        mother->decay_curve_from_expander =
-            inputs[DECAY_CURVE_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->decay_curve_from_expander = 0;
-      }
-      if (inputs[RELESAE_CURVE_INPUT].isConnected())
-      {
-        mother->release_curve_from_expander =
-            inputs[RELESAE_CURVE_INPUT].getVoltage() / 10;
-      }
-      else
-      {
-        mother->release_curve_from_expander = 0;
-      }
+      Vega* voice = mother->polyVoice(channel);
+      if (!voice) continue;
+      for (int input = 0; input < NUM_INPUTS; ++input)
+        voice->*destinations[input] = inputs[input].isConnected()
+            ? inputs[input].getPolyVoltage(channel) / 10 : 0;
     }
   }
 

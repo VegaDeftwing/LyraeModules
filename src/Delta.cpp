@@ -1,7 +1,10 @@
 #include "plugin.hpp"
+#include "Polyphonic.hpp"
 
 struct Delta : Module
 {
+  virtual Delta* polyVoice(int channel) { return channel == 0 ? this : nullptr; }
+
   enum ParamIds
   {
     R1A_PARAM,
@@ -83,6 +86,7 @@ struct Delta : Module
     configOutput(RIGHT_OUTPUT, "Right");
   }
 
+  bool deferOutput = false;
   float R1T = 0.f;
   float R2T = 0.f;
   float R3T = 0.f;
@@ -259,10 +263,13 @@ struct Delta : Module
       lights[LMR_LIGHT].setBrightness(0.f);
     }
 
-    outputs[LEFT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTL / 10.f)) *
-                                    10.f);
-    outputs[RIGHT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTR / 10.f)) *
-                                     10.f);
+    if (!deferOutput)
+    {
+      outputs[LEFT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTL / 10.f)) *
+                                      10.f);
+      outputs[RIGHT_OUTPUT].setVoltage(simd::atan(simd::atan(STAGE3OUTR / 10.f)) *
+                                       10.f);
+    }
   }
 };
 
@@ -339,4 +346,28 @@ struct DeltaWidget : ModuleWidget
   }
 };
 
-Model *modelDelta = createModel<Delta, DeltaWidget>("Delta");
+// Stateful switching remains scalar; batch the expensive output saturation
+// across independent voices with Rack's four-lane atan approximation.
+template <> struct PolyTraits<Delta> {
+  static int extraChannels(Delta&) { return 0; }
+  static int packedOutput() { return -1; }
+  static void prepare(Delta&, Delta& voice, int) { voice.deferOutput = true; }
+  static void finish(Delta& host, int channels) {
+    for (int c = 1; c < channels; c += 4) {
+      simd::float_4 left = 0.f, right = 0.f;
+      for (int lane = 0; lane < 4 && c + lane < channels; ++lane) {
+        Delta* voice = host.polyVoice(c + lane);
+        left[lane] = voice->STAGE3OUTL;
+        right[lane] = voice->STAGE3OUTR;
+      }
+      left = simd::atan(simd::atan(left / 10.f)) * 10.f;
+      right = simd::atan(simd::atan(right / 10.f)) * 10.f;
+      for (int lane = 0; lane < 4 && c + lane < channels; ++lane) {
+        host.outputs[Delta::LEFT_OUTPUT].setVoltage(left[lane], c + lane);
+        host.outputs[Delta::RIGHT_OUTPUT].setVoltage(right[lane], c + lane);
+      }
+    }
+  }
+};
+
+Model *modelDelta = createModel<Polyphonic<Delta>, DeltaWidget>("Delta");
