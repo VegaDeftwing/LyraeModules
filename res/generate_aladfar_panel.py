@@ -33,17 +33,27 @@ def element(parent, tag, **attributes):
 
 root = ET.Element(f"{{{SVG}}}svg", width="360", height="380", viewBox="0 0 360 380")
 element(root, "title").text = "Aladfar — core controls layout"
-element(root, "desc").text = "24 HP. Plain background, control groups, CV areas, and outlined serif labels."
+element(root, "desc").text = (
+    "24 HP. Plain background, control groups, CV areas, and outlined serif labels."
+)
 
 
 def layer(name):
     layer_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    return element(root, "g", id=layer_id, **{f"{{{INK}}}groupmode": "layer", f"{{{INK}}}label": name})
+    return element(
+        root,
+        "g",
+        id=layer_id,
+        **{f"{{{INK}}}groupmode": "layer", f"{{{INK}}}label": name},
+    )
 
 
 base = layer("Background")
 element(base, "rect", x=0, y=0, width=360, height=380, fill=BASE)
-element(base, "rect", x=1, y=1, width=358, height=378, fill="none", stroke="#8d8b88", **{"stroke-width": 1})
+element(
+    base, "rect", x=1, y=1, width=358, height=378,
+    fill="none", stroke="#8d8b88", **{"stroke-width": 1},
+)
 areas = layer("Control areas")
 labels = layer("Lettering — outlined DejaVu Serif")
 
@@ -69,7 +79,10 @@ def text(name, x, baseline, value, size=12, color=LIGHT):
 def divider(name, y, label):
     text(name, 180, y, label, 8.2, INK_COLOR)
     for start, end in [(12, 137), (223, 348)]:
-        element(areas, "path", d=f"M{start} {y - 3}H{end}", fill="none", stroke="#888682", **{"stroke-width": .6})
+        element(
+            areas, "path", d=f"M{start} {y - 3}H{end}",
+            fill="none", stroke="#888682", **{"stroke-width": .6},
+        )
 
 
 # Tuning, tracking, and two external modulation inputs.

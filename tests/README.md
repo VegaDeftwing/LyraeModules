@@ -80,3 +80,9 @@ maximum setting is measured over a longer interval because successive bursty
 cycles vary; the compensated mean carrier must retain the same 0.1% tolerance.
 Texture tests require at least 6 dB more normalized high-frequency energy and
 check that no samples reach the final host-rate safety clamp in that fixture.
+
+Aladfar's [development guide](../docs/Aladfar-development.md) maps the code to its
+signal path and describes formatting and panel regeneration. Existing issues
+found during the cosmetic review are documented in
+[the review notes](../docs/Aladfar-review.md); this cleanup does not change their
+behavior or weaken test tolerances.
