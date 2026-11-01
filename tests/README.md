@@ -50,3 +50,33 @@ against the same 16-voice adapter using scalar cores. The benchmark reports the
 best of three 100,000-sample runs with fixed parameters and changing audio;
 results depend on CPU, compiler, inputs and mode. This isolates the SIMD
 changes rather than measuring Rack GUI or audio driver performance.
+
+## Aladfar oscillator
+
+`make test` also runs the separate `tests/aladfar.cpp` harness. It checks the
+manual's ramp/offset/balance diagrams; 16 SIMD voices against independent mono
+instances; mono broadcast and short cables; channel-count changes; PWM isolation;
+zero-drive mute; both resonance routes; sync level/polarity; malformed CV; five
+sample rates; and measured 1 V/oct pitch tracking. Coherent FFT tests compare
+inharmonic energy against an uncorrected 1x version of the same signal path.
+These numerical checks do not establish a match to a physical MIG VCO.
+
+Use `make benchmark-aladfar RACK_DIR=/path/to/Rack-SDK` to measure one and sixteen
+voices with resonance enabled. This nonlinear model costs more than a basic
+saw oscillator; performance depends on sample rate and host CPU.
+
+Aladfar also checks the 1J24B curve checkpoints and transconductance, load-line
+residuals, the ADAA integral against independent double-precision antiderivatives,
+low-frequency phase accumulation, unused-output independence, and compensated
+resonance tuning across five octaves, both feedback modes and 48/96 kHz.
+Run `make test-aladfar-sanitized RACK_DIR=/path/to/Rack-SDK` for address,
+undefined-behavior and leak checking of the oscillator harness.
+
+High-resonance texture is checked using normalized energy above 3 kHz for a
+110 Hz oscillator in both modes. This ensures the upper range adds audible
+high-frequency content rather than simply raising output gain. The pitch tests
+continue to cover maximum resonance, including the regenerative region. The
+maximum setting is measured over a longer interval because successive bursty
+cycles vary; the compensated mean carrier must retain the same 0.1% tolerance.
+Texture tests require at least 6 dB more normalized high-frequency energy and
+check that no samples reach the final host-rate safety clamp in that fixture.

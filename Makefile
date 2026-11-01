@@ -33,3 +33,20 @@ benchmark: build/tests/regression
 build/tests/regression: tests/regression.cpp Makefile $(wildcard tests/legacy/*.hpp) $(wildcard src/*.cpp src/*.hpp)
 	mkdir -p build/tests
 	$(CXX) -Isrc $(CXXFLAGS) $< -L$(RACK_DIR) -lRack -o $@
+
+build/tests/aladfar: tests/aladfar.cpp $(wildcard src/Aladfar* src/dsp/*.hpp) Makefile
+	mkdir -p build/tests
+	$(CXX) -iquote src $(CXXFLAGS) $< -L$(RACK_DIR) -lRack -o $@
+test: test-aladfar
+.PHONY: test-aladfar benchmark-aladfar
+test-aladfar: build/tests/aladfar
+	LD_LIBRARY_PATH="$(RACK_DIR):$$LD_LIBRARY_PATH" $<
+benchmark-aladfar: build/tests/aladfar
+	LD_LIBRARY_PATH="$(RACK_DIR):$$LD_LIBRARY_PATH" $< --benchmark
+
+build/tests/aladfar-sanitized: tests/aladfar.cpp $(wildcard src/Aladfar* src/dsp/*.hpp) Makefile
+	mkdir -p build/tests
+	$(CXX) -iquote src $(filter-out -O3 -funsafe-math-optimizations,$(CXXFLAGS)) -O1 -fsanitize=address,undefined $< -L$(RACK_DIR) -lRack -o $@
+.PHONY: test-aladfar-sanitized
+test-aladfar-sanitized: build/tests/aladfar-sanitized
+	LD_LIBRARY_PATH="$(RACK_DIR):$$LD_LIBRARY_PATH" $<

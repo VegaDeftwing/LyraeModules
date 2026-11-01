@@ -162,3 +162,55 @@ Next, is the clock-selected ring mod section. The upper, middle input is the clo
 Finally, in the last section, the two inputs are actually gate inputs and toggle channel cross-ring-mod. That is, if the top input of the bottom section is brought high, the right channel will be multiplied with the left, and if the bottom input is brought high, the left channel multiplied with the right.
 
 It's pretty easy to get a really high output from this module, or to just get awful sounds. So, watch your levels and probably use a clipping VCA like ZZC's used here, and try to keep input content harmonically related. Octaves tend to work well.
+
+## Aladfar
+
+A 24 HP, 16-voice oscillator inspired by the Catalyst Audio / Electroserf
+[MIG VCO manual](https://www.catalystaudio.com/_files/ugd/069912_a25dfb0872ba4adcaef2aede744fbab1.pdf).
+The plain panel uses the collection's serif labels, hexagonal knobs and custom
+jacks, organized into dark control pills and light CV areas. Its SVG has editable
+background, control-area and outlined-lettering layers for adding artwork later.
+
+Two alternating ramp cores produce the **Raw** signal. **Balance** bends one
+half from rising ramp through triangle to falling ramp; **Offset** shifts the
+two halves relative to one another. **Resonance** returns the loaded signal to
+the cores' grid paths. The I/II switch selects common-output or cross-coupled
+feedback. Grid-charge recovery, shared screen loading and a compact 1J24B
+current model change charging speed and waveform curvature. Automatic pitch
+compensation trims the charging scale to retain the requested tuning as resonance
+changes. The upper quarter of Resonance now enters stronger regenerative
+feedback with cutoff/saturation and RC recovery bursts, for a brighter,
+screechier tone in both modes. Compensation settles over several free-running
+cycles and respects pitch/FM and
+external sync. Resonance is not a resonant filter applied to a finished oscillator.
+
+- **Tune** sets frequency; **Fine** spans +/-1 semitone. Pitch tracks 1 V/oct.
+  Linear FM adds C4 Hz per volt at full amount. Negative total frequency clamps
+  at 0.01 Hz; this is not a through-zero FM oscillator.
+- **PWM** is the Raw comparator threshold and affects only **Pulse**. Offset and
+  Balance modulation also make complex pulse shapes.
+- **Smooth / Fold** drives the third modeled pentode stage. Zero mutes both
+  processed outputs; higher drive moves through amplification into asymmetric
+  saturation. **Shape** changes bias and tilts high/low emphasis.
+- **Smooth** is the saturated signal. **Fold** passes it through four smooth
+  reflection stages with antiderivative antialiasing.
+- **Sync level** attenuates the sync input. Weak positive/negative crossings
+  address the corresponding core; stronger signals can take over either half.
+  Zero disables sync. Bipolar signals can synchronize both halves.
+- Offset, Balance, PWM, Resonance, Shape and Drive have CV attenuverters;
+  10 V at full amount spans one normalized unit. Drive's attenuverter defaults
+  to +100%; the others default to zero. FM has a separate unipolar amount.
+
+All nine inputs support polyphony. The widest input sets the width of all four
+outputs; mono cables broadcast and missing lanes in shorter polyphonic cables
+are zero. Four voices share Rack SIMD arithmetic. No audio-thread allocation is
+needed. Core BLEP/BLAMP, sync/comparator minBLEP, 8x nonlinear processing (16x folding) and
+256-tap output FIRs suppress aliasing; extreme modulation can still alias.
+
+The 1J24B current approximation is checked against published curves. The full
+hardware schematic is unavailable: feedback routing and external component
+values are estimates, not a circuit-exact or sound-matched clone. See
+[the model notes](docs/Aladfar-model.md) for sources, equations and assumptions.
+A neutral starting point is Tune=C4, Balance=0%, Offset=50%, Resonance=0%,
+Smooth/Fold=35%, Shape=0. At minimum Balance and minimum Offset the two identical
+ramps emphasize twice the pair's cycle frequency, as in the reference diagrams.

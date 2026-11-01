@@ -78,6 +78,16 @@
         "Sequencer",
         "Expander"
       ]
+    },
+    {
+      "slug": "Aladfar",
+      "name": "Aladfar",
+      "description": "Alternating-core oscillator with feedback resonance, asymmetric saturation and four-stage folding",
+      "tags": [
+        "Oscillator",
+        "Waveshaper",
+        "Polyphonic"
+      ]
     }
   ]
 }

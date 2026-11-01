@@ -1,0 +1,187 @@
+{
+  "version": "2.6.6",
+  "modules": [
+    {
+      "id": 1,
+      "plugin": "Core",
+      "model": "Notes",
+      "params": [],
+      "pos": [
+        0,
+        0
+      ],
+      "data": {
+        "text": "ALADFAR / ALTERNATING CORE VCO\n\nPlay chords using QWERTY / ZXCVB keyboard rows.\n\nOffset=50%, Balance=0% gives a saw.\nTry Balance and Offset together.\n\nResonance feeds the modeled grid circuits. I/II selects the return route; pitch compensation keeps the core tuned.\n\nSmooth/Fold drives saturation and folding. At zero, both processed outputs are silent.\n\nThe scopes compare Raw/Pulse and Smooth/Fold. Move the VCA audio cable between oscillator outputs to listen.\n\nChoose your output device in Audio 2. All inputs support 16 voices."
+      }
+    },
+    {
+      "id": 2,
+      "plugin": "Core",
+      "model": "MIDIToCVInterface",
+      "params": [],
+      "pos": [
+        16,
+        0
+      ],
+      "data": {
+        "smooth": true,
+        "channels": 4,
+        "polyMode": 0,
+        "clockDivision": 24,
+        "midi": {
+          "driver": -11,
+          "deviceName": "QWERTY keyboard (US)",
+          "channel": -1
+        }
+      }
+    },
+    {
+      "id": 3,
+      "plugin": "LyraeModules",
+      "model": "Aladfar",
+      "params": [],
+      "pos": [
+        24,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "plugin": "Fundamental",
+      "model": "VCA-1",
+      "params": [
+        {
+          "id": 0,
+          "value": 1.0
+        },
+        {
+          "id": 1,
+          "value": 1.0
+        }
+      ],
+      "pos": [
+        48,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "plugin": "Core",
+      "model": "AudioInterface2",
+      "params": [
+        {
+          "id": 0,
+          "value": 0.5
+        }
+      ],
+      "pos": [
+        51,
+        0
+      ],
+      "data": {
+        "audio": {
+          "driver": 2,
+          "sampleRate": 48000.0,
+          "blockSize": 1024,
+          "inputOffset": 0,
+          "outputOffset": 0
+        },
+        "dcFilter": true
+      }
+    },
+    {
+      "id": 6,
+      "plugin": "Fundamental",
+      "model": "Scope",
+      "params": [],
+      "pos": [
+        56,
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "plugin": "Fundamental",
+      "model": "Scope",
+      "params": [],
+      "pos": [
+        69,
+        0
+      ]
+    }
+  ],
+  "cables": [
+    {
+      "id": 1,
+      "outputModuleId": 2,
+      "outputId": 0,
+      "inputModuleId": 3,
+      "inputId": 0,
+      "color": "#ffb437"
+    },
+    {
+      "id": 2,
+      "outputModuleId": 2,
+      "outputId": 1,
+      "inputModuleId": 4,
+      "inputId": 0,
+      "color": "#f3374b"
+    },
+    {
+      "id": 3,
+      "outputModuleId": 3,
+      "outputId": 0,
+      "inputModuleId": 4,
+      "inputId": 1,
+      "color": "#8b64d9"
+    },
+    {
+      "id": 4,
+      "outputModuleId": 4,
+      "outputId": 0,
+      "inputModuleId": 5,
+      "inputId": 0,
+      "color": "#8b64d9"
+    },
+    {
+      "id": 5,
+      "outputModuleId": 4,
+      "outputId": 0,
+      "inputModuleId": 5,
+      "inputId": 1,
+      "color": "#8b64d9"
+    },
+    {
+      "id": 6,
+      "outputModuleId": 3,
+      "outputId": 0,
+      "inputModuleId": 6,
+      "inputId": 0,
+      "color": "#ffb437"
+    },
+    {
+      "id": 7,
+      "outputModuleId": 3,
+      "outputId": 1,
+      "inputModuleId": 6,
+      "inputId": 1,
+      "color": "#f3374b"
+    },
+    {
+      "id": 8,
+      "outputModuleId": 3,
+      "outputId": 2,
+      "inputModuleId": 7,
+      "inputId": 0,
+      "color": "#8b64d9"
+    },
+    {
+      "id": 9,
+      "outputModuleId": 3,
+      "outputId": 3,
+      "inputModuleId": 7,
+      "inputId": 1,
+      "color": "#56bbaa"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ extern Model *modelBD383238;
 extern Model *modelZeta;
 extern Model *modelSheliak;
 extern Model *modelBeta;
+extern Model *modelAladfar;
 
 // Declare each Model, defined in each module source file
 // extern Model* modelMyModule;

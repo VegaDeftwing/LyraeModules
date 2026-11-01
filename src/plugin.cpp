@@ -13,4 +13,5 @@ void init(Plugin *p)
   p->addModel(modelZeta);
   p->addModel(modelSheliak);
   p->addModel(modelBeta);
+  p->addModel(modelAladfar);
 }
