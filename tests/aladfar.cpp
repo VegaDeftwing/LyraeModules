@@ -247,6 +247,109 @@ void behavior() {
         << "Drive mute, resonance routes, fold, sync levels/polarities, malformed CV and five sample rates passed\n";
 }
 
+// Seed the end of a long cycle so the test covers an actual wrap without
+// rendering a 100-second LFO period. Other lanes cover normal phase and sync.
+void slowCycleBookkeeping() {
+    for (bool complete : {false, true}) {
+        aladfar::Bank<> bank;
+        aladfar::Controls controls;
+        controls.frequency = float_4(.01f, 300.f, .01f, .01f);
+        controls.resonance = float_4(.8f, 0.f, 0.f, .8f);
+        controls.sync = float_4(0.f, 0.f, 0.f, 5.f);
+        bank.phase = float_4(.99999994f, .9999f, .4f, .99999994f);
+        for (int lane = 0; lane < 4; ++lane) {
+            bank.lowActive[lane] = lane != 1;
+            bank.lowPhase[lane] = lane == 2 ? .4 : 1. - 1e-9;
+            double start = lane == 1 ? double(bank.phase[lane]) : bank.lowPhase[lane];
+            bank.observedCycles[lane] = start;
+            bank.referenceCycles[lane] = lane == 0 && complete ? 2. * start : start;
+            bank.fullCycle[lane] = lane == 0 ? complete : false;
+        }
+        bank.process(controls, 1.f / 192000.f, false, 1);
+        require(bank.phase[0] < 1e-5f, "seeded slow phase must actually wrap");
+        require(bank.fullCycle[0], "slow wrap must complete the tuning cycle");
+        require(bank.observedCycles[0] < 1e-5,
+                "slow wrap must restart the observed-cycle integral");
+        require(std::fabs(bank.observedCycles[0] - bank.lowPhase[0]) < 1e-12,
+                "post-wrap integral must use the precise fractional crossing");
+        require(bank.referenceCycles[0] >= 0. && bank.referenceCycles[0] < 1e-5,
+                "requested-cycle integral must restart at the same crossing");
+        if (complete)
+            require(bank.tuningGain[0] > 1.f, "completed slow cycle must update tuning gain");
+        else
+            near(bank.tuningGain[0], 1.f, 0.f, "initial partial slow cycle must not retune");
+        require(bank.fullCycle[1] && bank.observedCycles[1] < .01,
+                "normal-rate lane must still detect its own wrap");
+        require(!bank.fullCycle[2] && bank.observedCycles[2] > .4,
+                "another lane's wrap must not restart a non-wrapping slow lane");
+        require(!bank.fullCycle[3] && bank.observedCycles[3] < 1e-5,
+                "forced sync must still discard the partial cycle");
+        near(bank.tuningGain[3], 1.f, 0.f, "sync must not be mistaken for a tuning error");
+
+        controls.frequency[0] = 1000.f;
+        bank.process(controls, 1.f / 192000.f, false, 1);
+        require(!bank.lowActive[0] && bank.observedCycles[0] < .01,
+                "leaving precise phase mode must preserve the new cycle's bookkeeping");
+    }
+    std::cout
+        << "Precise slow wraps, fractional cycle timing, mixed lanes and sync exclusion passed\n";
+}
+
+void pulseReconnection() {
+    for (bool cross : {false, true}) {
+        aladfar::Bank<> bank;
+        aladfar::Controls controls;
+        controls.frequency = float_4(300.f, 440.f, 600.f, 880.f);
+        bool pending = false;
+        for (int frame = 0; frame < 256 && !pending; ++frame) {
+            bank.process(controls, 1.f / 48000.f, cross, 3);
+            for (auto& sample : bank.pulseBlep.buf)
+                pending |= sample[0] != 0.f;
+        }
+        require(pending, "reconnection fixture must begin with a pending Pulse edge");
+        auto continuous = bank;
+        controls.resonance = 0.f;
+        controls.pwm = .7f;
+        for (int frame = 0; frame < 5000; ++frame) {
+            auto masked = bank.process(controls, 1.f / 48000.f, cross, 1);
+            auto reference = continuous.process(controls, 1.f / 48000.f, cross, 3);
+            for (int lane = 0; lane < 4; ++lane)
+                near(masked[0][lane], reference[0][lane], 2e-5f,
+                     "disconnecting Pulse must not change Raw");
+        }
+
+        // Two identical current cores with deliberately different old Pulse
+        // histories must reconnect identically. This isolates stale state from
+        // the ordinary change in voltage when any audio cable is connected.
+        auto poisoned = bank;
+        poisoned.pulseBlep.pos = 17;
+        for (auto& sample : poisoned.pulseBlep.buf)
+            sample = 100.f;
+        for (auto& sample : poisoned.decimators[1].inBuffer)
+            sample = 77.f;
+        poisoned.previousComparator = -1000.f;
+        for (int frame = 0; frame < 128; ++frame) {
+            auto reconnected = bank.process(controls, 1.f / 48000.f, cross, 3);
+            auto otherHistory = poisoned.process(controls, 1.f / 48000.f, cross, 3);
+            auto reference = continuous.process(controls, 1.f / 48000.f, cross, 3);
+            for (int lane = 0; lane < 4; ++lane) {
+                near(reconnected[1][lane], otherHistory[1][lane], 0.f,
+                     "reconnected Pulse must not replay old BLEP, comparator or FIR history");
+                near(reconnected[0][lane], reference[0][lane], 2e-5f,
+                     "reconnecting Pulse must not reset or disturb Raw");
+                require(std::isfinite(reconnected[1][lane]) &&
+                            std::fabs(reconnected[1][lane]) < 8.f,
+                        "reconnected Pulse must retain its normal voltage range");
+                if (frame >= 64)
+                    near(reconnected[1][lane], reference[1][lane], 2e-5f,
+                         "reconnected Pulse must converge to continuously processed Pulse");
+            }
+        }
+    }
+    std::cout
+        << "Pulse reconnection discards stale history and preserves core/steady audio passed\n";
+}
+
 double aliasRatio(const std::vector<float>& samples, int fundamental) {
     int n = samples.size();
     std::vector<float> spectrum(n * 2);
@@ -463,6 +566,8 @@ int main(int argc, char** argv) {
         diagrams();
         routing();
         behavior();
+        slowCycleBookkeeping();
+        pulseReconnection();
         tuning();
         resonanceTuning();
         resonanceTexture();

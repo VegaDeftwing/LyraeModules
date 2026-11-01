@@ -159,6 +159,7 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
     // Previous host-frame target for interpolation; seeded on first process.
     Controls previous;
     bool initialized = false;
+    bool pulseWasConnected = false;
     rack::dsp::MinBlepGenerator<16, 16, float_4> syncBlep, pulseBlep;
     std::array<rack::dsp::Decimator<Oversample, Quality, float_4>, 4> decimators;
     // Output order matches the Rack adapter: Raw, Pulse, Smooth, Fold.
@@ -177,6 +178,7 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
         conductionA = conductionB = 1.f;
         dcRaw = dcSmooth = dcFold = previousComparator = positive = negative = 0.f;
         initialized = false;
+        pulseWasConnected = false;
         for (auto& d : decimators)
             d.reset();
         for (auto& stage : foldStages)
@@ -261,6 +263,7 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
 
     std::array<float_4, 4> process(const Controls& target, float sampleTime, bool cross,
                                    unsigned outputMask = 15) {
+        const bool reconnectPulse = initialized && (outputMask & 2) && !pulseWasConnected;
         if (!initialized) {
             previous = target;
             initialized = true;
@@ -311,6 +314,8 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
             auto increment = simd::clamp(c.frequency * midpoint.current * tuningGain * dt, 1e-10f,
                                          .45f / Oversample);
             auto oldPhase = phase;
+            double preciseStart[4] = {};
+            bool preciseStep[4] = {};
             if (simd::movemask(increment < 1e-6f)) {
                 // At very low rates, a float increment can be smaller than a
                 // phase ULP. Use double accumulators just for these lanes.
@@ -318,6 +323,8 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
                     if (increment[lane] < 1e-6f) {
                         if (!lowActive[lane])
                             lowPhase[lane] = phase[lane];
+                        preciseStart[lane] = lowPhase[lane];
+                        preciseStep[lane] = true;
                         lowPhase[lane] += double(increment[lane]);
                         lowPhase[lane] -= std::floor(lowPhase[lane]);
                         phase[lane] = std::min(float(lowPhase[lane]), .99999994f);
@@ -380,9 +387,12 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
                 }
                 double desired = double(c.frequency[lane]) * dt;
                 double actual = increment[lane];
-                bool wrapped = double(oldPhase[lane]) + actual >= 1.;
+                // Use the accumulator that actually advanced this lane. The
+                // capped float view cannot detect every very slow double wrap.
+                double start = preciseStep[lane] ? preciseStart[lane] : double(oldPhase[lane]);
+                bool wrapped = start + actual >= 1.;
                 if (wrapped) {
-                    double before = std::min(1., std::max(0., (1. - oldPhase[lane]) / actual));
+                    double before = std::min(1., std::max(0., (1. - start) / actual));
                     referenceCycles[lane] += desired * before;
                     observedCycles[lane] += actual * before;
                     if (fullCycle[lane] && c.resonance[lane] > 0.f && observedCycles[lane] > .5) {
@@ -423,6 +433,18 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
             if (outputMask & 2) {
                 auto comparator = raw - c.pwm;
                 auto pulse = simd::ifelse(comparator >= 0.f, 1.f, -1.f);
+                if (reconnectPulse && s == 0) {
+                    // Discard the disconnected path's old edge/FIR history.
+                    // Seed the current level, rather than inventing a comparator
+                    // transition or fading through an unrelated old waveform.
+                    pulseBlep.pos = 0;
+                    for (auto& sample : pulseBlep.buf)
+                        sample = 0.f;
+                    previousComparator = comparator;
+                    decimators[1].reset();
+                    for (auto& sample : decimators[1].inBuffer)
+                        sample = 5.f * pulse;
+                }
                 auto oldPulse = simd::ifelse(previousComparator >= 0.f, 1.f, -1.f);
                 for (int lane = 0; lane < 4; ++lane)
                     if (Antialias && pulse[lane] != oldPulse[lane]) {
@@ -484,6 +506,7 @@ template <int Oversample = 8, int Quality = 32, bool Antialias = true> struct Ba
             buffer[0][s] = outputBuffer(5.f * (raw - dcRaw));
         }
         previous = target;
+        pulseWasConnected = (outputMask & 2) != 0;
 
         // 7. Decimate connected outputs; the final clamp is emergency headroom.
         std::array<float_4, 4> out;
